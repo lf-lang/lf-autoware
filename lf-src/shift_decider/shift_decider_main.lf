@@ -1,0 +1,62 @@
+/**
+ * LF reactor wrapping the Autoware Universe ShiftDecider.
+ *
+ * This node is timer-driven (100ms / 10Hz): polls control_cmd,
+ * autoware_state, and current_gear via InterProcessPollingSubscriber,
+ * then publishes a gear command.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/shift_decider/autoware_shift_decider.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor shift_decider {
+    output gear_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
+
+    state node:autoware::shift_decider::ShiftDecider*;
+    state node_shared_ptr:std::shared_ptr<autoware::shift_decider::ShiftDecider>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + SHIFT_DECIDER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::shift_decider::ShiftDecider(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<autoware::shift_decider::ShiftDecider>(self->node);
+
+        // Start spin thread for InterProcessPollingSubscribers
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::shift_decider::ShiftDecider>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::shift_decider::ShiftDecider>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Timer at 100ms matching the node's 10Hz rate
+    timer t(0, 100 msec);
+    reaction (t) -> gear_cmd {=
+        self->node->onTimer();
+
+        if (self->node->lf_gear_cmd_is_set) {
+            auto msg = std::make_shared<autoware_vehicle_msgs::msg::GearCommand>(
+                self->node->lf_output_gear_cmd);
+            lf_set(gear_cmd, msg);
+            self->node->lf_gear_cmd_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    sd = new shift_decider();
+}

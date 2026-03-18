@@ -1,0 +1,90 @@
+/**
+ * LF reactor for the Bridge Interface between ROS2 (AWSIM + sensing/
+ * localization/perception) and the LF federation.
+ *
+ * This reactor acts as the boundary between the standard ROS2 pipeline
+ * (AWSIM simulator, sensing, localization, perception — all running as
+ * normal ROS2 nodes) and the LF-scheduled planning + control pipeline.
+ *
+ * OUTPUT side (LF → ROS2): receives final vehicle commands from the LF
+ * control pipeline and publishes them to ROS2 topics for AWSIM.
+ *
+ * Note: In the Phase 2 "Option B" approach, individual nodes keep their
+ * own ROS2 polling subscribers alive via spin threads. The bridge
+ * interface only handles the final command outputs that go back to AWSIM.
+ * ROS2 input data (localization, perception, etc.) is consumed directly
+ * by each node's spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include <rclcpp/rclcpp.hpp>
+    #include <autoware_control_msgs/msg/control.hpp>
+    #include <autoware_vehicle_msgs/msg/gear_command.hpp>
+    #include <autoware_vehicle_msgs/msg/turn_indicators_command.hpp>
+    #include <autoware_vehicle_msgs/msg/hazard_lights_command.hpp>
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor bridge_interface {
+    // Inputs from the LF control pipeline (final commands to publish to ROS2)
+    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
+    input gear_cmd_in:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
+    input turn_indicators_cmd_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    input hazard_lights_cmd_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
+
+    state ros_node:{= std::shared_ptr<rclcpp::Node> =};
+    state pub_control_cmd:{= rclcpp::Publisher<autoware_control_msgs::msg::Control>::SharedPtr =};
+    state pub_gear_cmd:{= rclcpp::Publisher<autoware_vehicle_msgs::msg::GearCommand>::SharedPtr =};
+    state pub_turn_indicators_cmd:{= rclcpp::Publisher<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>::SharedPtr =};
+    state pub_hazard_lights_cmd:{= rclcpp::Publisher<autoware_vehicle_msgs::msg::HazardLightsCommand>::SharedPtr =};
+
+    reaction (startup) {=
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->ros_node = std::make_shared<rclcpp::Node>("lf_bridge_interface");
+
+        // Create publishers for vehicle commands (matching AWSIM topic names)
+        self->pub_control_cmd = self->ros_node->create_publisher<
+            autoware_control_msgs::msg::Control>(
+            "/control/command/control_cmd", rclcpp::QoS{1});
+        self->pub_gear_cmd = self->ros_node->create_publisher<
+            autoware_vehicle_msgs::msg::GearCommand>(
+            "/control/command/gear_cmd", rclcpp::QoS{1});
+        self->pub_turn_indicators_cmd = self->ros_node->create_publisher<
+            autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
+            "/control/command/turn_indicators_cmd", rclcpp::QoS{1});
+        self->pub_hazard_lights_cmd = self->ros_node->create_publisher<
+            autoware_vehicle_msgs::msg::HazardLightsCommand>(
+            "/control/command/hazard_lights_cmd", rclcpp::QoS{1});
+
+        // Start spin thread for this node (needed for publisher keep-alive)
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<rclcpp::Node>>,
+            static_cast<void*>(new std::shared_ptr<rclcpp::Node>(self->ros_node)));
+    =}
+
+    // Publish control commands from LF to ROS2
+    reaction (control_cmd_in) {=
+        self->pub_control_cmd->publish(*control_cmd_in->value);
+    =}
+
+    reaction (gear_cmd_in) {=
+        self->pub_gear_cmd->publish(*gear_cmd_in->value);
+    =}
+
+    reaction (turn_indicators_cmd_in) {=
+        self->pub_turn_indicators_cmd->publish(*turn_indicators_cmd_in->value);
+    =}
+
+    reaction (hazard_lights_cmd_in) {=
+        self->pub_hazard_lights_cmd->publish(*hazard_lights_cmd_in->value);
+    =}
+}
+
+main reactor {
+    bi = new bridge_interface();
+}

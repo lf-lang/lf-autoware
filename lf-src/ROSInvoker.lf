@@ -1,0 +1,24 @@
+target CCpp
+
+reactor CallbackInvoker {
+    input in: int 
+    output out: out 
+    reaction(in) -> out {=
+        // Invokes ROS callback here directly.
+        // If the callback generates any output,
+        // do not send it via the pub/sub event bus.
+        // Instead, send it via LF's output ports.
+    =}
+}
+
+reactor ROSInvoker {
+    input in: int
+    output out: int 
+    
+    cb = new CallbackInvoker()
+    in -> cb.in
+
+    reaction(cb.out) -> out {=
+        lf_set(out, cb.out->value);
+    =}
+}

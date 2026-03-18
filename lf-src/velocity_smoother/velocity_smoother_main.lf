@@ -1,0 +1,70 @@
+/**
+ * LF reactor wrapping the Autoware Universe VelocitySmootherNode.
+ *
+ * This node is subscription-driven: an incoming trajectory triggers
+ * the onCurrentTrajectory callback, which polls odometry/acceleration
+ * via InterProcessPollingSubscriber (kept alive by the spin thread)
+ * and produces a smoothed trajectory output.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/velocity_smoother/node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor velocity_smoother {
+    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
+    state node:autoware::velocity_smoother::VelocitySmootherNode*;
+    state node_shared_ptr:std::shared_ptr<autoware::velocity_smoother::VelocitySmootherNode>;
+
+    reaction (startup) {=
+        // Load parameters from launcher config
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + VELOCITY_SMOOTHER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        // Also load vehicle info params
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+        nodeOptions.arguments({
+            "--ros-args",
+            "--params-file", yaml_path,
+            "--params-file", vehicle_info_path
+        });
+
+        self->node = new autoware::velocity_smoother::VelocitySmootherNode(nodeOptions);
+        self->node_shared_ptr = std::shared_ptr<autoware::velocity_smoother::VelocitySmootherNode>(
+            self->node);
+
+        // Start spin thread for InterProcessPollingSubscribers and TF
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::velocity_smoother::VelocitySmootherNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::velocity_smoother::VelocitySmootherNode>(
+                    self->node_shared_ptr)));
+    =}
+
+    reaction (trajectory_in) -> trajectory_out {=
+        // Call the node's main processing callback
+        self->node->onCurrentTrajectory(trajectory_in->value);
+
+        // Check if output was produced
+        if (self->node->lf_trajectory_is_set) {
+            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                self->node->lf_output_trajectory);
+            lf_set(trajectory_out, msg);
+            self->node->lf_trajectory_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    vs = new velocity_smoother();
+}

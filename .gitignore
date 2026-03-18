@@ -25,3 +25,10 @@ capture/
 
 # Node.js
 node_modules/
+
+# LF generated files
+lf-src/src-gen/
+lf-src/bin/
+lf-src/include/
+src-gen/
+bin/

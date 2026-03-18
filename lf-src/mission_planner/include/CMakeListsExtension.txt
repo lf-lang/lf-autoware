@@ -1,0 +1,52 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_mission_planner REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(autoware_component_interface_specs REQUIRED)
+find_package(autoware_route_handler REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(autoware_utils_geometry REQUIRED)
+find_package(autoware_utils_logging REQUIRED)
+find_package(autoware_utils_system REQUIRED)
+find_package(autoware_utils_visualization REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/src
+)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_mission_planner
+    autoware_planning_msgs
+    autoware_adapi_v1_msgs
+    autoware_map_msgs
+    autoware_component_interface_specs
+    autoware_route_handler
+    autoware_lanelet2_extension
+    autoware_vehicle_info_utils
+    autoware_utils_geometry
+    autoware_utils_logging
+    autoware_utils_system
+    autoware_utils_visualization
+    geometry_msgs
+    pluginlib
+    rclcpp
+    rclcpp_components
+    tf2_ros
+    tf2_geometry_msgs
+)

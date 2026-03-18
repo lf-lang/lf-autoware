@@ -1,0 +1,50 @@
+/**
+ * Planning sub-reactor: groups all planning nodes.
+ *
+ * Contains:
+ * - MissionPlanner: route planning from goal (service-driven)
+ * - BehaviorPathPlanner: path planning with lane changes, goal approach
+ * - ScenarioSelector: selects between lane driving and parking scenarios
+ * - VelocitySmoother: trajectory smoothing
+ * - FreespacePlanner: free-space trajectory planning (parking)
+ * - CostmapGenerator: costmap for freespace planner
+ */
+target CCpp;
+
+import mission_planner from "../mission_planner/mission_planner_main.lf";
+import behavior_path_planner from "../behavior_path_planner/behavior_path_planner_main.lf";
+import scenario_selector from "../scenario_selector/scenario_selector_main.lf";
+import velocity_smoother from "../velocity_smoother/velocity_smoother_main.lf";
+import freespace_planner from "../freespace_planner/freespace_planner_main.lf";
+import costmap_generator from "../costmap_generator/costmap_generator_main.lf";
+
+reactor Planning {
+    // Final output: smoothed trajectory for the control pipeline
+    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
+    // Instantiate planning sub-reactors
+    mp = new mission_planner();
+    bpp = new behavior_path_planner();
+    ss = new scenario_selector();
+    vs = new velocity_smoother();
+    fp = new freespace_planner();
+    cg = new costmap_generator();
+
+    // Wiring:
+    // ScenarioSelector selects between lane driving trajectory (from
+    // velocity_smoother) and parking trajectory (from freespace_planner).
+    // The selected trajectory is the final planning output.
+    //
+    // Note: In Phase 2 Option B, most inter-node data flows still happen
+    // via ROS2 topics (through polling subscribers in each node's spin
+    // thread). The LF connections below wire the primary data pipeline
+    // that we want deterministically scheduled.
+
+    // ScenarioSelector output → VelocitySmoother (for lane driving scenario)
+    // VelocitySmoother gets its input trajectory via ROS2 polling subscriber
+    // from behavior_path_planner and motion_planning pipeline.
+
+    // The final selected trajectory from scenario_selector is the output
+    ss.trajectory_out -> vs.trajectory_in;
+    vs.trajectory_out -> trajectory_out;
+}

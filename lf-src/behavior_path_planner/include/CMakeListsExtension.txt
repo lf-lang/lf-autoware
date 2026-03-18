@@ -1,0 +1,58 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_behavior_path_planner REQUIRED)
+find_package(autoware_behavior_path_planner_common REQUIRED)
+find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_vehicle_msgs REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(autoware_planning_factor_interface REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tier4_planning_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/behavior_path_planner/autoware_behavior_path_planner/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/behavior_path_planner/autoware_behavior_path_planner/src
+)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_behavior_path_planner
+    autoware_behavior_path_planner_common
+    autoware_internal_planning_msgs
+    autoware_planning_msgs
+    autoware_vehicle_msgs
+    autoware_perception_msgs
+    autoware_adapi_v1_msgs
+    autoware_map_msgs
+    autoware_motion_utils
+    autoware_utils
+    autoware_vehicle_info_utils
+    autoware_planning_factor_interface
+    autoware_lanelet2_extension
+    nav_msgs
+    geometry_msgs
+    rclcpp
+    rclcpp_components
+    tf2_ros
+    tf2_geometry_msgs
+    tier4_planning_msgs
+    visualization_msgs
+)

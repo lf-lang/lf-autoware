@@ -1,0 +1,73 @@
+/**
+ * LF reactor wrapping the Autoware Universe CostmapGenerator.
+ *
+ * This node is timer-driven: polls points, objects, and scenario via
+ * InterProcessPollingSubscriber, generates a costmap from pointcloud,
+ * objects, and lanelet primitives, and publishes an occupancy grid.
+ *
+ * The ROS2 timer is replaced by an LF timer. The spin thread keeps
+ * polling subscribers and TF alive.
+ */
+target CCpp;
+
+preamble {=
+    // Undefine OSQP macros that conflict with OpenCV TermCriteria
+    #ifdef MAX_ITER
+    #undef MAX_ITER
+    #endif
+    #include "autoware/costmap_generator/costmap_generator.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor costmap_generator {
+    output occupancy_grid_out:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
+
+    state node:autoware::costmap_generator::CostmapGenerator*;
+    state node_shared_ptr:std::shared_ptr<autoware::costmap_generator::CostmapGenerator>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + COSTMAP_GENERATOR_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
+
+        self->node = new autoware::costmap_generator::CostmapGenerator(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<autoware::costmap_generator::CostmapGenerator>(
+            self->node);
+
+        // Start spin thread for polling subscribers and TF
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::costmap_generator::CostmapGenerator>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::costmap_generator::CostmapGenerator>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Timer at 200ms (5Hz, typical costmap generation rate)
+    timer t(0, 200 msec);
+    reaction (t) -> occupancy_grid_out {=
+        self->node->onTimer();
+
+        if (self->node->lf_occupancy_grid_is_set) {
+            auto msg = std::make_shared<nav_msgs::msg::OccupancyGrid>(
+                self->node->lf_output_occupancy_grid);
+            lf_set(occupancy_grid_out, msg);
+            self->node->lf_occupancy_grid_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    cg = new costmap_generator();
+}

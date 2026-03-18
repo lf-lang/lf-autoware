@@ -1,0 +1,179 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/behavior_path_planner/autoware_behavior_path_planner/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/behavior_path_planner/autoware_behavior_path_planner/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_costmap_generator/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_freespace_planner/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_scenario_selector/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_shift_decider/include
+    ${LF_AUTOWARE_HOME}/build/autoware_shift_decider/include
+    ${LF_AUTOWARE_HOME}/build/autoware_costmap_generator/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_trajectory_follower_node/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/src
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_velocity_smoother/include
+    ${PCL_INCLUDE_DIRS}
+)
+
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(FLANN REQUIRED)
+# QHULL doesn't have cmake config; create imported targets for PCL
+if(NOT TARGET QHULL::QHULL)
+    find_library(QHULL_LIBRARY NAMES qhull_r qhull)
+    if(QHULL_LIBRARY)
+        add_library(QHULL::QHULL UNKNOWN IMPORTED)
+        set_target_properties(QHULL::QHULL PROPERTIES IMPORTED_LOCATION "${QHULL_LIBRARY}")
+    endif()
+endif()
+
+find_package(autoware_component_interface_specs_universe REQUIRED)
+find_package(autoware_component_interface_utils REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_behavior_path_planner REQUIRED)
+find_package(autoware_behavior_path_planner_common REQUIRED)
+find_package(autoware_component_interface_specs REQUIRED)
+find_package(autoware_control_msgs REQUIRED)
+find_package(autoware_costmap_generator REQUIRED)
+find_package(autoware_freespace_planner REQUIRED)
+find_package(autoware_freespace_planning_algorithms REQUIRED)
+find_package(autoware_grid_map_utils REQUIRED)
+find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(autoware_mission_planner REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_mpc_lateral_controller REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_pid_longitudinal_controller REQUIRED)
+find_package(autoware_planning_factor_interface REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_route_handler REQUIRED)
+find_package(autoware_scenario_selector REQUIRED)
+find_package(autoware_shift_decider REQUIRED)
+find_package(autoware_system_msgs REQUIRED)
+find_package(autoware_trajectory_follower_base REQUIRED)
+find_package(autoware_trajectory_follower_node REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_utils_geometry REQUIRED)
+find_package(autoware_utils_logging REQUIRED)
+find_package(autoware_utils_system REQUIRED)
+find_package(autoware_utils_visualization REQUIRED)
+find_package(autoware_vehicle_cmd_gate REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(autoware_vehicle_msgs REQUIRED)
+find_package(autoware_velocity_smoother REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(grid_map_ros REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tier4_api_utils REQUIRED)
+find_package(tier4_control_msgs REQUIRED)
+find_package(tier4_external_api_msgs REQUIRED)
+find_package(tier4_planning_msgs REQUIRED)
+find_package(tier4_system_msgs REQUIRED)
+find_package(tier4_vehicle_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_component_interface_specs_universe
+    autoware_component_interface_utils
+    autoware_adapi_v1_msgs
+    autoware_behavior_path_planner
+    autoware_behavior_path_planner_common
+    autoware_component_interface_specs
+    autoware_control_msgs
+    autoware_costmap_generator
+    autoware_freespace_planner
+    autoware_freespace_planning_algorithms
+    autoware_grid_map_utils
+    autoware_internal_planning_msgs
+    autoware_lanelet2_extension
+    autoware_map_msgs
+    autoware_mission_planner
+    autoware_motion_utils
+    autoware_mpc_lateral_controller
+    autoware_perception_msgs
+    autoware_pid_longitudinal_controller
+    autoware_planning_factor_interface
+    autoware_planning_msgs
+    autoware_route_handler
+    autoware_scenario_selector
+    autoware_shift_decider
+    autoware_system_msgs
+    autoware_trajectory_follower_base
+    autoware_trajectory_follower_node
+    autoware_utils
+    autoware_utils_geometry
+    autoware_utils_logging
+    autoware_utils_system
+    autoware_utils_visualization
+    autoware_vehicle_cmd_gate
+    autoware_vehicle_info_utils
+    autoware_vehicle_msgs
+    autoware_velocity_smoother
+    diagnostic_updater
+    geometry_msgs
+    grid_map_ros
+    nav_msgs
+    pcl_conversions
+    pcl_ros
+    pluginlib
+    rclcpp
+    rclcpp_components
+    std_srvs
+    tf2_geometry_msgs
+    tf2_ros
+    tier4_api_utils
+    tier4_control_msgs
+    tier4_external_api_msgs
+    tier4_planning_msgs
+    tier4_system_msgs
+    tier4_vehicle_msgs
+    visualization_msgs
+)
+
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES})
+
+# Explicitly link node implementation libraries (ament_target_dependencies
+# only links message/interface libs, not the node .so files)
+find_library(LIB_VEHICLE_CMD_GATE vehicle_cmd_gate_node
+    PATHS ${autoware_vehicle_cmd_gate_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SHIFT_DECIDER autoware_shift_decider_node
+    PATHS ${autoware_shift_decider_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAJECTORY_FOLLOWER autoware_trajectory_follower_node
+    PATHS ${autoware_trajectory_follower_node_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SCENARIO_SELECTOR autoware_scenario_selector_node
+    PATHS ${autoware_scenario_selector_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_BEHAVIOR_PATH_PLANNER autoware_behavior_path_planner_node
+    PATHS ${autoware_behavior_path_planner_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_MISSION_PLANNER autoware_mission_planner_node
+    PATHS ${autoware_mission_planner_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_VELOCITY_SMOOTHER autoware_velocity_smoother_node
+    PATHS ${autoware_velocity_smoother_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_FREESPACE_PLANNER autoware_freespace_planner_node
+    PATHS ${autoware_freespace_planner_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_COSTMAP_GENERATOR autoware_costmap_generator_node
+    PATHS ${autoware_costmap_generator_DIR}/../../../lib NO_DEFAULT_PATH)
+
+foreach(lib
+    ${LIB_VEHICLE_CMD_GATE} ${LIB_SHIFT_DECIDER} ${LIB_TRAJECTORY_FOLLOWER}
+    ${LIB_SCENARIO_SELECTOR} ${LIB_BEHAVIOR_PATH_PLANNER} ${LIB_MISSION_PLANNER}
+    ${LIB_VELOCITY_SMOOTHER} ${LIB_FREESPACE_PLANNER} ${LIB_COSTMAP_GENERATOR})
+    if(lib)
+        target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${lib})
+    endif()
+endforeach()

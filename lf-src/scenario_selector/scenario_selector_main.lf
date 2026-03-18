@@ -1,0 +1,74 @@
+/**
+ * LF reactor wrapping the Autoware Universe ScenarioSelectorNode.
+ *
+ * This node is timer-driven (10Hz default): polls odometry, parking state,
+ * and operation mode via InterProcessPollingSubscriber, selects between
+ * lane driving and parking scenarios, and publishes the selected trajectory
+ * and scenario.
+ *
+ * The ROS2 timer is replaced by an LF timer. The spin thread keeps
+ * regular subscriptions and polling subscribers alive.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/scenario_selector/node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor scenario_selector {
+    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    output scenario_out:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
+
+    state node:autoware::scenario_selector::ScenarioSelectorNode*;
+    state node_shared_ptr:std::shared_ptr<autoware::scenario_selector::ScenarioSelectorNode>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + SCENARIO_SELECTOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::scenario_selector::ScenarioSelectorNode(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<autoware::scenario_selector::ScenarioSelectorNode>(
+            self->node);
+
+        // Start spin thread for subscriptions and polling subscribers
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::scenario_selector::ScenarioSelectorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::scenario_selector::ScenarioSelectorNode>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Timer at 100ms (10Hz, matching default update_rate)
+    timer t(0, 100 msec);
+    reaction (t) -> trajectory_out, scenario_out {=
+        self->node->onTimer();
+
+        if (self->node->lf_trajectory_is_set) {
+            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                self->node->lf_output_trajectory);
+            lf_set(trajectory_out, msg);
+            self->node->lf_trajectory_is_set = false;
+        }
+        if (self->node->lf_scenario_is_set) {
+            auto msg = std::make_shared<autoware_internal_planning_msgs::msg::Scenario>(
+                self->node->lf_output_scenario);
+            lf_set(scenario_out, msg);
+            self->node->lf_scenario_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    ss = new scenario_selector();
+}

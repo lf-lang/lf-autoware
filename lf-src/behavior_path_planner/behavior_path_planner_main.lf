@@ -1,0 +1,88 @@
+/**
+ * LF reactor wrapping the Autoware Universe BehaviorPathPlannerNode.
+ *
+ * This node is timer-driven (10Hz): polls route, map, odometry, acceleration,
+ * scenario, perception, occupancy grid, costmap, traffic signals, lateral
+ * offset, operation mode, and velocity limit via InterProcessPollingSubscriber,
+ * then produces a path with lane id, turn signal, and hazard signal.
+ *
+ * The ROS2 timer is replaced by an LF timer. The spin thread keeps
+ * polling subscribers and TF alive.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/behavior_path_planner/behavior_path_planner_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor behavior_path_planner {
+    output path_out:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
+    output turn_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    output hazard_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
+
+    state node:autoware::behavior_path_planner::BehaviorPathPlannerNode*;
+    state node_shared_ptr:std::shared_ptr<autoware::behavior_path_planner::BehaviorPathPlannerNode>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + BEHAVIOR_PATH_PLANNER_PARAM;
+        std::string drivable_area_path = home + "/" + BEHAVIOR_PATH_PLANNER_DRIVABLE_AREA_PARAM;
+        std::string scene_manager_path = home + "/" + BEHAVIOR_PATH_PLANNER_SCENE_MANAGER_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {drivable_area_path, "/**"},
+            {scene_manager_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
+
+        self->node = new autoware::behavior_path_planner::BehaviorPathPlannerNode(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<
+            autoware::behavior_path_planner::BehaviorPathPlannerNode>(self->node);
+
+        // Start spin thread for polling subscribers and TF
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::behavior_path_planner::BehaviorPathPlannerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::behavior_path_planner::BehaviorPathPlannerNode>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Timer at 100ms (10Hz, matching default behavior_path_planner rate)
+    timer t(0, 100 msec);
+    reaction (t) -> path_out, turn_signal_out, hazard_signal_out {=
+        self->node->run();
+
+        if (self->node->lf_path_is_set) {
+            auto msg = std::make_shared<autoware_internal_planning_msgs::msg::PathWithLaneId>(
+                self->node->lf_output_path);
+            lf_set(path_out, msg);
+            self->node->lf_path_is_set = false;
+        }
+        if (self->node->lf_turn_signal_is_set) {
+            auto msg = std::make_shared<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
+                self->node->lf_output_turn_signal);
+            lf_set(turn_signal_out, msg);
+            self->node->lf_turn_signal_is_set = false;
+        }
+        if (self->node->lf_hazard_signal_is_set) {
+            auto msg = std::make_shared<autoware_vehicle_msgs::msg::HazardLightsCommand>(
+                self->node->lf_output_hazard_signal);
+            lf_set(hazard_signal_out, msg);
+            self->node->lf_hazard_signal_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    bpp = new behavior_path_planner();
+}

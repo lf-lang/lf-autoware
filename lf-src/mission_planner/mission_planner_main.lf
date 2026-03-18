@@ -1,0 +1,64 @@
+/**
+ * LF reactor wrapping the Autoware Core MissionPlanner.
+ *
+ * This node is service-driven: routes are set via ROS2 service calls
+ * (SetLaneletRoute, SetWaypointRoute, ClearRoute). It has a data_check_timer
+ * for initialization only. Routes are computed in response to service
+ * requests, which are handled by the spin thread.
+ *
+ * The LF timer polls for new route outputs produced by service callbacks.
+ * The spin thread keeps services, subscriptions, and TF alive.
+ */
+target CCpp;
+
+preamble {=
+    #include "mission_planner/mission_planner.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor mission_planner {
+    output route_out:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
+
+    state node:autoware::mission_planner::MissionPlanner*;
+    state node_shared_ptr:std::shared_ptr<autoware::mission_planner::MissionPlanner>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MISSION_PLANNER_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
+
+        self->node = new autoware::mission_planner::MissionPlanner(nodeOptions);
+        self->node_shared_ptr = std::shared_ptr<autoware::mission_planner::MissionPlanner>(
+            self->node);
+
+        // Start spin thread for services, subscriptions, and TF
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::mission_planner::MissionPlanner>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::mission_planner::MissionPlanner>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Poll for route outputs at 10Hz (service callbacks run in spin thread)
+    timer t(0, 100 msec);
+    reaction (t) -> route_out {=
+        if (self->node->lf_route_is_set) {
+            auto msg = std::make_shared<autoware_planning_msgs::msg::LaneletRoute>(
+                self->node->lf_output_route);
+            lf_set(route_out, msg);
+            self->node->lf_route_is_set = false;
+        }
+    =}
+}
+
+main reactor {
+    mp = new mission_planner();
+}

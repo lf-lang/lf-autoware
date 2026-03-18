@@ -1,0 +1,47 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_costmap_generator REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_grid_map_utils REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(grid_map_ros REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io)
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_costmap_generator/include
+    ${PCL_INCLUDE_DIRS}
+)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_costmap_generator
+    autoware_perception_msgs
+    autoware_map_msgs
+    autoware_lanelet2_extension
+    autoware_grid_map_utils
+    autoware_utils
+    grid_map_ros
+    nav_msgs
+    rclcpp
+    rclcpp_components
+    tf2_ros
+    tf2_geometry_msgs
+    pcl_conversions
+    pcl_ros
+)
+
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES})
