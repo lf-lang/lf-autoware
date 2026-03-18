@@ -1,0 +1,46 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/src
+)
+
+find_package(autoware_multi_object_tracker REQUIRED)
+find_package(autoware_object_recognition_utils REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_utils_debug REQUIRED)
+find_package(autoware_utils_geometry REQUIRED)
+find_package(autoware_utils_math REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(glog REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(unique_identifier_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_multi_object_tracker
+    autoware_object_recognition_utils
+    autoware_perception_msgs
+    autoware_utils_debug
+    autoware_utils_geometry
+    autoware_utils_math
+    diagnostic_updater
+    Eigen3
+    glog
+    nav_msgs
+    rclcpp
+    rclcpp_components
+    tf2
+    tf2_ros
+    unique_identifier_msgs
+    visualization_msgs
+)

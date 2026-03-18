@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe ScanGroundFilterComponent.
+ *
+ * Subscription-driven node: segments ground vs obstacle points.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor ground_segmentation {
+    state node:{= std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::ground_segmentation::ScanGroundFilterComponent>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    gs = new ground_segmentation();
+}

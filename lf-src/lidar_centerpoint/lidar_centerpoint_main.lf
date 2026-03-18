@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe LidarCenterPointNode.
+ *
+ * Subscription-driven node: DNN-based 3D object detection from point clouds.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/lidar_centerpoint/node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor lidar_centerpoint {
+    state node:{= std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::lidar_centerpoint::LidarCenterPointNode>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode>(self->node)));
+    =}
+}
+
+main reactor {
+    lcp = new lidar_centerpoint();
+}

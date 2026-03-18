@@ -25,6 +25,16 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_ndt_scan_matcher/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_gyro_odometer/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_ekf_localizer/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_ground_segmentation/src/scan_ground_filter
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_lidar_centerpoint/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_map_based_prediction/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/src/pointcloud_based_occupancy_grid_map
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/pointcloud_map_loader
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/lanelet2_map_loader
     ${PCL_INCLUDE_DIRS}
 )
 
@@ -52,24 +62,34 @@ find_package(autoware_ekf_localizer REQUIRED)
 find_package(autoware_freespace_planner REQUIRED)
 find_package(autoware_freespace_planning_algorithms REQUIRED)
 find_package(autoware_grid_map_utils REQUIRED)
+find_package(autoware_ground_segmentation REQUIRED)
 find_package(autoware_gyro_odometer REQUIRED)
 find_package(autoware_imu_corrector REQUIRED)
 find_package(autoware_internal_debug_msgs REQUIRED)
 find_package(autoware_internal_localization_msgs REQUIRED)
 find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_interpolation REQUIRED)
 find_package(autoware_kalman_filter REQUIRED)
 find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_lanelet2_utils REQUIRED)
+find_package(autoware_lidar_centerpoint REQUIRED)
 find_package(autoware_localization_util REQUIRED)
+find_package(autoware_map_based_prediction REQUIRED)
+find_package(autoware_map_loader REQUIRED)
 find_package(autoware_map_msgs REQUIRED)
 find_package(autoware_mission_planner REQUIRED)
 find_package(autoware_motion_utils REQUIRED)
 find_package(autoware_mpc_lateral_controller REQUIRED)
+find_package(autoware_multi_object_tracker REQUIRED)
 find_package(autoware_ndt_scan_matcher REQUIRED)
+find_package(autoware_object_recognition_utils REQUIRED)
 find_package(autoware_perception_msgs REQUIRED)
 find_package(autoware_pid_longitudinal_controller REQUIRED)
 find_package(autoware_planning_factor_interface REQUIRED)
 find_package(autoware_planning_msgs REQUIRED)
 find_package(autoware_point_types REQUIRED)
+find_package(autoware_pointcloud_preprocessor REQUIRED)
+find_package(autoware_probabilistic_occupancy_grid_map REQUIRED)
 find_package(autoware_qos_utils REQUIRED)
 find_package(autoware_route_handler REQUIRED)
 find_package(autoware_scenario_selector REQUIRED)
@@ -82,6 +102,7 @@ find_package(autoware_utils_debug REQUIRED)
 find_package(autoware_utils_diagnostics REQUIRED)
 find_package(autoware_utils_geometry REQUIRED)
 find_package(autoware_utils_logging REQUIRED)
+find_package(autoware_utils_math REQUIRED)
 find_package(autoware_utils_pcl REQUIRED)
 find_package(autoware_utils_system REQUIRED)
 find_package(autoware_utils_tf REQUIRED)
@@ -91,11 +112,19 @@ find_package(autoware_vehicle_info_utils REQUIRED)
 find_package(autoware_vehicle_msgs REQUIRED)
 find_package(autoware_vehicle_velocity_converter REQUIRED)
 find_package(autoware_velocity_smoother REQUIRED)
+find_package(cuda_blackboard REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(diagnostic_updater REQUIRED)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(fmt REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(glog REQUIRED)
+find_package(grid_map_costmap_2d REQUIRED)
 find_package(grid_map_ros REQUIRED)
+find_package(laser_geometry REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(nav2_costmap_2d REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(pcl_conversions REQUIRED)
 find_package(pcl_ros REQUIRED)
@@ -103,6 +132,7 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_eigen REQUIRED)
@@ -115,7 +145,9 @@ find_package(tier4_external_api_msgs REQUIRED)
 find_package(tier4_planning_msgs REQUIRED)
 find_package(tier4_system_msgs REQUIRED)
 find_package(tier4_vehicle_msgs REQUIRED)
+find_package(unique_identifier_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(yaml-cpp REQUIRED)
 
 ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_adapi_v1_msgs
@@ -131,24 +163,34 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_freespace_planner
     autoware_freespace_planning_algorithms
     autoware_grid_map_utils
+    autoware_ground_segmentation
     autoware_gyro_odometer
     autoware_imu_corrector
     autoware_internal_debug_msgs
     autoware_internal_localization_msgs
     autoware_internal_planning_msgs
+    autoware_interpolation
     autoware_kalman_filter
     autoware_lanelet2_extension
+    autoware_lanelet2_utils
+    autoware_lidar_centerpoint
     autoware_localization_util
+    autoware_map_based_prediction
+    autoware_map_loader
     autoware_map_msgs
     autoware_mission_planner
     autoware_motion_utils
     autoware_mpc_lateral_controller
+    autoware_multi_object_tracker
     autoware_ndt_scan_matcher
+    autoware_object_recognition_utils
     autoware_perception_msgs
     autoware_pid_longitudinal_controller
     autoware_planning_factor_interface
     autoware_planning_msgs
     autoware_point_types
+    autoware_pointcloud_preprocessor
+    autoware_probabilistic_occupancy_grid_map
     autoware_qos_utils
     autoware_route_handler
     autoware_scenario_selector
@@ -161,6 +203,7 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_utils_diagnostics
     autoware_utils_geometry
     autoware_utils_logging
+    autoware_utils_math
     autoware_utils_pcl
     autoware_utils_system
     autoware_utils_tf
@@ -170,11 +213,18 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_vehicle_msgs
     autoware_vehicle_velocity_converter
     autoware_velocity_smoother
+    cuda_blackboard
     diagnostic_msgs
     diagnostic_updater
+    Eigen3
     fmt
     geometry_msgs
+    glog
+    grid_map_costmap_2d
     grid_map_ros
+    laser_geometry
+    message_filters
+    nav2_costmap_2d
     nav_msgs
     pcl_conversions
     pcl_ros
@@ -182,6 +232,7 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     rclcpp
     rclcpp_components
     sensor_msgs
+    std_msgs
     std_srvs
     tf2
     tf2_eigen
@@ -194,10 +245,16 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     tier4_planning_msgs
     tier4_system_msgs
     tier4_vehicle_msgs
+    unique_identifier_msgs
     visualization_msgs
+    yaml-cpp
 )
 
 target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES})
+
+# Fix transitive dependency issues
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC CURL::libcurl ncurses)
 
 # Explicitly link node implementation libraries (ament_target_dependencies
 # only links message/interface libs, not the node .so files)
@@ -231,13 +288,30 @@ find_library(LIB_GYRO_ODOMETER autoware_gyro_odometer_node
     PATHS ${autoware_gyro_odometer_DIR}/../../../lib NO_DEFAULT_PATH)
 find_library(LIB_EKF_LOCALIZER autoware_ekf_localizer_node
     PATHS ${autoware_ekf_localizer_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_GROUND_SEGMENTATION autoware_ground_segmentation
+    PATHS ${autoware_ground_segmentation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_LIDAR_CENTERPOINT autoware_lidar_centerpoint_component
+    PATHS ${autoware_lidar_centerpoint_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_MULTI_OBJECT_TRACKER autoware_multi_object_tracker
+    PATHS ${autoware_multi_object_tracker_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_MAP_BASED_PREDICTION map_based_prediction_node
+    PATHS ${autoware_map_based_prediction_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OCCUPANCY_GRID_MAP pointcloud_based_occupancy_grid_map
+    PATHS ${autoware_probabilistic_occupancy_grid_map_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_POINTCLOUD_MAP_LOADER pointcloud_map_loader_node
+    PATHS ${autoware_map_loader_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_LANELET2_MAP_LOADER lanelet2_map_loader_node
+    PATHS ${autoware_map_loader_DIR}/../../../lib NO_DEFAULT_PATH)
 
 foreach(lib
     ${LIB_VEHICLE_CMD_GATE} ${LIB_SHIFT_DECIDER} ${LIB_TRAJECTORY_FOLLOWER}
     ${LIB_SCENARIO_SELECTOR} ${LIB_BEHAVIOR_PATH_PLANNER} ${LIB_MISSION_PLANNER}
     ${LIB_VELOCITY_SMOOTHER} ${LIB_FREESPACE_PLANNER} ${LIB_COSTMAP_GENERATOR}
     ${LIB_CROP_BOX_FILTER} ${LIB_IMU_CORRECTOR} ${LIB_VEHICLE_VELOCITY_CONVERTER}
-    ${LIB_NDT_SCAN_MATCHER} ${LIB_GYRO_ODOMETER} ${LIB_EKF_LOCALIZER})
+    ${LIB_NDT_SCAN_MATCHER} ${LIB_GYRO_ODOMETER} ${LIB_EKF_LOCALIZER}
+    ${LIB_GROUND_SEGMENTATION} ${LIB_LIDAR_CENTERPOINT} ${LIB_MULTI_OBJECT_TRACKER}
+    ${LIB_MAP_BASED_PREDICTION} ${LIB_OCCUPANCY_GRID_MAP}
+    ${LIB_POINTCLOUD_MAP_LOADER} ${LIB_LANELET2_MAP_LOADER})
     if(lib)
         target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${lib})
     endif()

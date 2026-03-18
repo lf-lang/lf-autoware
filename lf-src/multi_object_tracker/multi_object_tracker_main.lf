@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe MultiObjectTracker.
+ *
+ * Subscription-driven node: tracks detected objects across frames.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "multi_object_tracker_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor multi_object_tracker {
+    state node:{= std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::multi_object_tracker::MultiObjectTracker>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker>(self->node)));
+    =}
+}
+
+main reactor {
+    mot = new multi_object_tracker();
+}

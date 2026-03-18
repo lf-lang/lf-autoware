@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe PointcloudBasedOccupancyGridMapNode.
+ *
+ * Subscription-driven node: creates occupancy grid from point clouds.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "pointcloud_based_occupancy_grid_map_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor occupancy_grid_map {
+    state node:{= std::shared_ptr<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode>(self->node)));
+    =}
+}
+
+main reactor {
+    ogm = new occupancy_grid_map();
+}

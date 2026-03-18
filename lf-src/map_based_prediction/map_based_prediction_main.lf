@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe MapBasedPredictionNode.
+ *
+ * Subscription-driven node: predicts object trajectories using map info.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "map_based_prediction/map_based_prediction_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor map_based_prediction {
+    state node:{= std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::map_based_prediction::MapBasedPredictionNode>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode>(self->node)));
+    =}
+}
+
+main reactor {
+    mbp = new map_based_prediction();
+}

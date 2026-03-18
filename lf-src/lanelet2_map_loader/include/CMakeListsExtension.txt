@@ -1,0 +1,29 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/lanelet2_map_loader
+)
+
+find_package(autoware_map_loader REQUIRED)
+find_package(autoware_component_interface_specs REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_lanelet2_utils REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_map_loader
+    autoware_component_interface_specs
+    autoware_lanelet2_extension
+    autoware_lanelet2_utils
+    autoware_map_msgs
+    geometry_msgs
+    rclcpp
+    rclcpp_components
+)

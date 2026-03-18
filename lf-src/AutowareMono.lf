@@ -1,11 +1,11 @@
 /**
  * Monolithic (non-federated) Autoware LF program.
  *
- * Contains Sensing + Localization + Planning + Control + BridgeInterface.
- * Perception is not yet included (still runs as ROS nodes externally).
+ * Contains Sensing + Localization + Perception + Map + Planning + Control
+ * + BridgeInterface. CARLA interface runs as standard ROS node externally.
  *
  * Data between nodes flows via ROS2 polling subscribers (spin threads).
- * CARLA interface and perception nodes run as standard ROS2 nodes.
+ * LF controls scheduling of all timer callbacks.
  */
 target CCpp {
     cmake-include: "mono-include/CMakeListsExtension.txt"
@@ -13,6 +13,8 @@ target CCpp {
 
 import Sensing from "Packages/Sensing.lf";
 import Localization from "Packages/Localization.lf";
+import Perception from "Packages/Perception.lf";
+import Map from "Packages/Map.lf";
 import Planning from "Packages/Planning.lf";
 import Control from "Packages/Control.lf";
 import bridge_interface from "bridge_interface/bridge_interface_main.lf";
@@ -20,6 +22,8 @@ import bridge_interface from "bridge_interface/bridge_interface_main.lf";
 main reactor {
     sensing = new Sensing();
     localization = new Localization();
+    perception = new Perception();
+    map = new Map();
     planning = new Planning();
     control = new Control();
     bridge = new bridge_interface();

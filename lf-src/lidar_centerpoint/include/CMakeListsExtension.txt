@@ -1,0 +1,32 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_lidar_centerpoint/include
+)
+
+find_package(autoware_lidar_centerpoint REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(cuda_blackboard REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_lidar_centerpoint
+    autoware_perception_msgs
+    autoware_utils
+    cuda_blackboard
+    pcl_ros
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    tf2_eigen
+    tf2_geometry_msgs
+)

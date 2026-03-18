@@ -1,0 +1,25 @@
+/**
+ * Perception sub-reactor: groups core perception nodes.
+ *
+ * Contains:
+ * - GroundSegmentation: separates ground from obstacle points
+ * - LidarCenterpoint: DNN 3D object detection
+ * - MultiObjectTracker: tracks objects across frames
+ * - MapBasedPrediction: predicts object trajectories
+ * - OccupancyGridMap: occupancy grid representation
+ */
+target CCpp;
+
+import ground_segmentation from "../ground_segmentation/ground_segmentation_main.lf";
+import lidar_centerpoint from "../lidar_centerpoint/lidar_centerpoint_main.lf";
+import multi_object_tracker from "../multi_object_tracker/multi_object_tracker_main.lf";
+import map_based_prediction from "../map_based_prediction/map_based_prediction_main.lf";
+import occupancy_grid_map from "../occupancy_grid_map/occupancy_grid_map_main.lf";
+
+reactor Perception {
+    gs = new ground_segmentation();
+    lcp = new lidar_centerpoint();
+    mot = new multi_object_tracker();
+    mbp = new map_based_prediction();
+    ogm = new occupancy_grid_map();
+}

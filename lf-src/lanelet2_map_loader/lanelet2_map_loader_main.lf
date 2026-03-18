@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Core Lanelet2MapLoaderNode.
+ *
+ * Loads lanelet2 OSM map files. Runs passively via ROS
+ * callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/map_loader/lanelet2_map_loader_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor lanelet2_map_loader {
+    state node:{= std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::map_loader::Lanelet2MapLoaderNode>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode>(self->node)));
+    =}
+}
+
+main reactor {
+    lml = new lanelet2_map_loader();
+}
