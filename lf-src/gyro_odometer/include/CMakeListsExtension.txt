@@ -1,0 +1,40 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_gyro_odometer/src
+)
+
+find_package(autoware_gyro_odometer REQUIRED)
+find_package(autoware_localization_util REQUIRED)
+find_package(autoware_utils_diagnostics REQUIRED)
+find_package(autoware_utils_geometry REQUIRED)
+find_package(autoware_utils_logging REQUIRED)
+find_package(autoware_utils_tf REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(fmt REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_gyro_odometer
+    autoware_localization_util
+    autoware_utils_diagnostics
+    autoware_utils_geometry
+    autoware_utils_logging
+    autoware_utils_tf
+    diagnostic_msgs
+    fmt
+    geometry_msgs
+    sensor_msgs
+    rclcpp
+    rclcpp_components
+    tf2
+    tf2_geometry_msgs
+)

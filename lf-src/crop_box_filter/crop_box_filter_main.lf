@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Core CropBoxFilter.
+ *
+ * Subscription-driven node: filters point clouds by a crop box region.
+ * Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/crop_box_filter/crop_box_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor crop_box_filter {
+    state node:{= std::shared_ptr<autoware::crop_box_filter::CropBoxFilter> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::crop_box_filter::CropBoxFilter>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>(self->node)));
+    =}
+}
+
+main reactor {
+    cbf = new crop_box_filter();
+}

@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Core NDTScanMatcher.
+ *
+ * This node has a map_update_timer_ and multiple subscription callbacks.
+ * For now, it runs entirely via ROS in the spin thread (timer + subscriptions).
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/ndt_scan_matcher/ndt_scan_matcher_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor ndt_scan_matcher {
+    state node:{= std::shared_ptr<autoware::ndt_scan_matcher::NDTScanMatcher> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::ndt_scan_matcher::NDTScanMatcher>(nodeOptions);
+
+        // Start spin thread (timer + subscriptions run via ROS)
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::ndt_scan_matcher::NDTScanMatcher>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::ndt_scan_matcher::NDTScanMatcher>(self->node)));
+    =}
+}
+
+main reactor {
+    ndt = new ndt_scan_matcher();
+}

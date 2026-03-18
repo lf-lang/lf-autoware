@@ -1,0 +1,37 @@
+/**
+ * LF reactor wrapping the Autoware Core VehicleVelocityConverter.
+ *
+ * Subscription-driven node: converts VelocityReport to
+ * TwistWithCovarianceStamped. Runs passively via ROS callbacks
+ * in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "vehicle_velocity_converter.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor vehicle_velocity_converter {
+    state node:{= std::shared_ptr<autoware::vehicle_velocity_converter::VehicleVelocityConverter> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::vehicle_velocity_converter::VehicleVelocityConverter>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::vehicle_velocity_converter::VehicleVelocityConverter>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::vehicle_velocity_converter::VehicleVelocityConverter>(self->node)));
+    =}
+}
+
+main reactor {
+    vvc = new vehicle_velocity_converter();
+}

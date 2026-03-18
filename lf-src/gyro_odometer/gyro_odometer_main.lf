@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Core GyroOdometerNode.
+ *
+ * This node has a timer and subscription callbacks for vehicle twist
+ * and IMU data. For now, it runs entirely via ROS in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "gyro_odometer_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor gyro_odometer {
+    state node:{= std::shared_ptr<autoware::gyro_odometer::GyroOdometerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::gyro_odometer::GyroOdometerNode>(nodeOptions);
+
+        // Start spin thread (timer + subscriptions run via ROS)
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::gyro_odometer::GyroOdometerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::gyro_odometer::GyroOdometerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    go = new gyro_odometer();
+}

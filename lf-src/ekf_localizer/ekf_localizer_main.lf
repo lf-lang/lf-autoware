@@ -1,0 +1,37 @@
+/**
+ * LF reactor wrapping the Autoware Core EKFLocalizer.
+ *
+ * This node has a timer_control_ timer and subscription callbacks for
+ * pose and twist measurements. For now, it runs entirely via ROS
+ * in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/ekf_localizer/ekf_localizer.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor ekf_localizer {
+    state node:{= std::shared_ptr<autoware::ekf_localizer::EKFLocalizer> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::ekf_localizer::EKFLocalizer>(nodeOptions);
+
+        // Start spin thread (timer + subscriptions run via ROS)
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::ekf_localizer::EKFLocalizer>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::ekf_localizer::EKFLocalizer>(self->node)));
+    =}
+}
+
+main reactor {
+    ekf = new ekf_localizer();
+}

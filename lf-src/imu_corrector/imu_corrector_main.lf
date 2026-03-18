@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware Universe ImuCorrector.
+ *
+ * Subscription-driven node: corrects IMU data (bias, scale) and
+ * republishes. Runs passively via ROS callbacks in the spin thread.
+ */
+target CCpp;
+
+preamble {=
+    #include "autoware/imu_corrector/imu_corrector_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor imu_corrector {
+    state node:{= std::shared_ptr<autoware::imu_corrector::ImuCorrector> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::imu_corrector::ImuCorrector>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::imu_corrector::ImuCorrector>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::imu_corrector::ImuCorrector>(self->node)));
+    =}
+}
+
+main reactor {
+    ic = new imu_corrector();
+}
