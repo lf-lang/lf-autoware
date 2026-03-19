@@ -30,6 +30,6 @@ ros2 launch autoware_launch e2e_simulator.launch.xml \
     vehicle_model:=sample_vehicle \
     sensor_model:=carla_sensor_kit \
     simulator_type:=carla \
-    rviz:=false \
+    rviz:=true \
     launch_planning:=false \
     launch_control:=false
