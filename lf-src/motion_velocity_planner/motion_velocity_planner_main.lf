@@ -5,14 +5,47 @@ target CCpp {
 preamble {=
     #include "node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor motion_velocity_planner {
     state node:{= std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + PLANNING_COMMON_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"},
+            {home + "/" + PLANNING_NEAREST_SEARCH_PARAM, "/**"},
+            {home + "/" + VELOCITY_SMOOTHER_PARAM, "/**"},
+            {home + "/" + VELOCITY_SMOOTHER_ALGORITHM_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_OBSTACLE_STOP_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_OBSTACLE_SLOW_DOWN_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_OBSTACLE_CRUISE_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_DYNAMIC_OBSTACLE_STOP_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_OUT_OF_LANE_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_OBSTACLE_VELOCITY_LIMITER_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_RUN_OUT_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_BOUNDARY_DEPARTURE_PREVENTION_PARAM, "/**"},
+            {home + "/" + MOTION_VELOCITY_PLANNER_ROAD_USER_STOP_PARAM, "/**"}
+        });
+
+        // launch_modules parameter (list of module plugins)
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("launch_modules", std::vector<std::string>{
+                "autoware::motion_velocity_planner::ObstacleStopModule",
+                "autoware::motion_velocity_planner::ObstacleSlowDownModule",
+                "autoware::motion_velocity_planner::ObstacleCruiseModule",
+                "autoware::motion_velocity_planner::OutOfLaneModule",
+                "autoware::motion_velocity_planner::ObstacleVelocityLimiterModule",
+                "autoware::motion_velocity_planner::DynamicObstacleStopModule",
+                "autoware::motion_velocity_planner::RunOutModule",
+                "autoware::motion_velocity_planner::experimental::BoundaryDeparturePreventionModule",
+                "autoware::motion_velocity_planner::RoadUserStopModule",
+                ""
+            }));
 
         self->node = std::make_shared<autoware::motion_velocity_planner::MotionVelocityPlannerNode>(nodeOptions);
 

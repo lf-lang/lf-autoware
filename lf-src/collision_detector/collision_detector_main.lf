@@ -5,14 +5,17 @@ target CCpp {
 preamble {=
     #include "autoware/collision_detector/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor collision_detector {
     state node:{= std::shared_ptr<autoware::collision_detector::CollisionDetectorNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            (home + "/" + COLLISION_DETECTOR_PARAM).c_str(), "/**");
 
         self->node = std::make_shared<autoware::collision_detector::CollisionDetectorNode>(nodeOptions);
 

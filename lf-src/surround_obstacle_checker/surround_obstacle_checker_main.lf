@@ -5,14 +5,21 @@ target CCpp {
 preamble {=
     #include "node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor surround_obstacle_checker {
     state node:{= std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + SURROUND_OBSTACLE_CHECKER_PARAM, "/**"},
+            {home + "/" + PLANNING_COMMON_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"},
+            {home + "/" + PLANNING_NEAREST_SEARCH_PARAM, "/**"}
+        });
 
         self->node = std::make_shared<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>(nodeOptions);
 

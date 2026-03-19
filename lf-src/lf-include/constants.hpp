@@ -131,6 +131,116 @@ const std::string GYRO_ODOMETER_PARAM =
 const std::string EKF_LOCALIZER_PARAM =
     LAUNCHER_CONFIG_PATH + "/localization/ekf_localizer.param.yaml";
 
+// Behavior velocity planner parameter paths
+const std::string BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/behavior_planning/behavior_velocity_planner";
+const std::string BEHAVIOR_VELOCITY_PLANNER_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/behavior_velocity_planner.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_COMMON_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/behavior_velocity_planner_common.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_BLIND_SPOT_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/blind_spot.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_CROSSWALK_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/crosswalk.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_WALKWAY_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/walkway.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_DETECTION_AREA_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/detection_area.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_INTERSECTION_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/intersection.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_ROUNDABOUT_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/roundabout.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_STOP_LINE_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/stop_line.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_TRAFFIC_LIGHT_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/traffic_light.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_VIRTUAL_TRAFFIC_LIGHT_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/virtual_traffic_light.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_OCCLUSION_SPOT_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/occlusion_spot.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_NO_STOPPING_AREA_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/no_stopping_area.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_SPEED_BUMP_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/speed_bump.param.yaml";
+const std::string BEHAVIOR_VELOCITY_PLANNER_NO_DRIVABLE_LANE_PARAM =
+    BEHAVIOR_VELOCITY_PLANNER_PARAM_DIR + "/no_drivable_lane.param.yaml";
+
+// Path smoother parameter path
+const std::string PATH_SMOOTHER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/motion_planning/path_smoother/elastic_band_smoother.param.yaml";
+
+// Path optimizer parameter path
+const std::string PATH_OPTIMIZER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/motion_planning/autoware_path_optimizer/path_optimizer.param.yaml";
+
+// Motion velocity planner parameter paths
+const std::string MOTION_VELOCITY_PLANNER_PARAM_DIR =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/motion_planning/motion_velocity_planner";
+const std::string MOTION_VELOCITY_PLANNER_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/motion_velocity_planner.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_OBSTACLE_STOP_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/obstacle_stop.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_OBSTACLE_SLOW_DOWN_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/obstacle_slow_down.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_OBSTACLE_CRUISE_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/obstacle_cruise.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_DYNAMIC_OBSTACLE_STOP_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/dynamic_obstacle_stop.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_OUT_OF_LANE_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/out_of_lane.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_OBSTACLE_VELOCITY_LIMITER_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/obstacle_velocity_limiter.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_RUN_OUT_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/run_out.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_BOUNDARY_DEPARTURE_PREVENTION_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/boundary_departure_prevention.param.yaml";
+const std::string MOTION_VELOCITY_PLANNER_ROAD_USER_STOP_PARAM =
+    MOTION_VELOCITY_PLANNER_PARAM_DIR + "/road_user_stop.param.yaml";
+
+// Surround obstacle checker parameter path
+const std::string SURROUND_OBSTACLE_CHECKER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/motion_planning/surround_obstacle_checker/surround_obstacle_checker.param.yaml";
+
+// Planning validator parameter paths
+const std::string PLANNING_VALIDATOR_PARAM_DIR =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/common/planning_validator";
+const std::string PLANNING_VALIDATOR_PARAM =
+    PLANNING_VALIDATOR_PARAM_DIR + "/planning_validator.param.yaml";
+const std::string PLANNING_VALIDATOR_LATENCY_CHECKER_PARAM =
+    PLANNING_VALIDATOR_PARAM_DIR + "/latency_checker.param.yaml";
+const std::string PLANNING_VALIDATOR_TRAJECTORY_CHECKER_PARAM =
+    PLANNING_VALIDATOR_PARAM_DIR + "/trajectory_checker.param.yaml";
+const std::string PLANNING_VALIDATOR_INTERSECTION_COLLISION_CHECKER_PARAM =
+    PLANNING_VALIDATOR_PARAM_DIR + "/intersection_collision_checker.param.yaml";
+const std::string PLANNING_VALIDATOR_REAR_COLLISION_CHECKER_PARAM =
+    PLANNING_VALIDATOR_PARAM_DIR + "/rear_collision_checker.param.yaml";
+
+// External velocity limit selector parameter paths
+const std::string EXTERNAL_VELOCITY_LIMIT_SELECTOR_COMMON_PARAM =
+    "src/universe/autoware_universe/planning/autoware_external_velocity_limit_selector/config/default_common.param.yaml";
+const std::string EXTERNAL_VELOCITY_LIMIT_SELECTOR_PARAM =
+    "src/universe/autoware_universe/planning/autoware_external_velocity_limit_selector/config/default.param.yaml";
+
+// Operation mode transition manager parameter path
+const std::string OPERATION_MODE_TRANSITION_MANAGER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/operation_mode_transition_manager/operation_mode_transition_manager.param.yaml";
+
+// Lane departure checker parameter path
+const std::string LANE_DEPARTURE_CHECKER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/lane_departure_checker/lane_departure_checker.param.yaml";
+
+// Control validator parameter path
+const std::string CONTROL_VALIDATOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/control_validator/control_validator.param.yaml";
+
+// Autonomous emergency braking parameter path
+const std::string AUTONOMOUS_EMERGENCY_BRAKING_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/autoware_autonomous_emergency_braking/autonomous_emergency_braking.param.yaml";
+
+// Collision detector parameter path
+const std::string COLLISION_DETECTOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/autoware_collision_detector/collision_detector.param.yaml";
+
 // Map parameter paths
 const std::string POINTCLOUD_MAP_LOADER_PARAM =
     LAUNCHER_CONFIG_PATH + "/map/pointcloud_map_loader.param.yaml";

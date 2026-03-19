@@ -5,14 +5,32 @@ target CCpp {
 preamble {=
     #include "autoware/planning_validator/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor planning_validator {
     state node:{= std::shared_ptr<autoware::planning_validator::PlanningValidatorNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + PLANNING_VALIDATOR_PARAM, "/**"},
+            {home + "/" + PLANNING_VALIDATOR_LATENCY_CHECKER_PARAM, "/**"},
+            {home + "/" + PLANNING_VALIDATOR_TRAJECTORY_CHECKER_PARAM, "/**"},
+            {home + "/" + PLANNING_VALIDATOR_INTERSECTION_COLLISION_CHECKER_PARAM, "/**"},
+            {home + "/" + PLANNING_VALIDATOR_REAR_COLLISION_CHECKER_PARAM, "/**"}
+        });
+
+        // launch_modules parameter (list of module plugins)
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("launch_modules", std::vector<std::string>{
+                "autoware::planning_validator::LatencyChecker",
+                "autoware::planning_validator::TrajectoryChecker",
+                "autoware::planning_validator::IntersectionCollisionChecker",
+                "autoware::planning_validator::RearCollisionChecker",
+                ""
+            }));
 
         self->node = std::make_shared<autoware::planning_validator::PlanningValidatorNode>(nodeOptions);
 

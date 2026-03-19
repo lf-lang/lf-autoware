@@ -5,14 +5,20 @@ target CCpp {
 preamble {=
     #include "autoware/lane_departure_checker/lane_departure_checker_node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor lane_departure_checker {
     state node:{= std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + LANE_DEPARTURE_CHECKER_PARAM, "/**"},
+            {home + "/" + CONTROL_NEAREST_SEARCH_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"}
+        });
 
         self->node = std::make_shared<autoware::lane_departure_checker::LaneDepartureCheckerNode>(nodeOptions);
 

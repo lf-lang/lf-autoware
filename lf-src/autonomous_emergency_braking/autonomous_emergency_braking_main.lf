@@ -5,14 +5,17 @@ target CCpp {
 preamble {=
     #include "autoware/autonomous_emergency_braking/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor autonomous_emergency_braking {
     state node:{= std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            (home + "/" + AUTONOMOUS_EMERGENCY_BRAKING_PARAM).c_str(), "/**");
 
         self->node = std::make_shared<autoware::motion::control::autonomous_emergency_braking::AEB>(nodeOptions);
 

@@ -5,14 +5,61 @@ target CCpp {
 preamble {=
     #include "autoware/behavior_velocity_planner/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor behavior_velocity_planner {
     state node:{= std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + PLANNING_COMMON_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"},
+            {home + "/" + PLANNING_NEAREST_SEARCH_PARAM, "/**"},
+            {home + "/" + VELOCITY_SMOOTHER_PARAM, "/**"},
+            {home + "/" + VELOCITY_SMOOTHER_ALGORITHM_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_COMMON_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_BLIND_SPOT_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_CROSSWALK_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_WALKWAY_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_DETECTION_AREA_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_INTERSECTION_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_ROUNDABOUT_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_STOP_LINE_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_TRAFFIC_LIGHT_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_VIRTUAL_TRAFFIC_LIGHT_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_OCCLUSION_SPOT_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_NO_STOPPING_AREA_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_SPEED_BUMP_PARAM, "/**"},
+            {home + "/" + BEHAVIOR_VELOCITY_PLANNER_NO_DRIVABLE_LANE_PARAM, "/**"}
+        });
+
+        // launch_modules parameter (list of module plugins)
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("launch_modules", std::vector<std::string>{
+                "autoware::behavior_velocity_planner::experimental::CrosswalkModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::WalkwayModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::TrafficLightModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::IntersectionModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::RoundaboutModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::MergeFromPrivateModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::BlindSpotModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::DetectionAreaModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::VirtualTrafficLightModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::NoStoppingAreaModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::StopLineModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::OcclusionSpotModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::SpeedBumpModulePlugin",
+                "autoware::behavior_velocity_planner::experimental::NoDrivableLaneModulePlugin",
+                ""
+            }));
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("enable_all_modules_auto_mode", false));
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("is_simulation", false));
 
         self->node = std::make_shared<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>(nodeOptions);
 
