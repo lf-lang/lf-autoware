@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "obstacle_pointcloud_validator.hpp"
+    #include "utils.hpp"
+=}
+
+reactor object_validator {
+    state node:{= std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>(self->node)));
+    =}
+}
+
+main reactor {
+    ov = new object_validator();
+}

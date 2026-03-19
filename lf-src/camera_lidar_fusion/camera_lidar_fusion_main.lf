@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/image_projection_based_fusion/roi_cluster_fusion/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor camera_lidar_fusion {
+    state node:{= std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::image_projection_based_fusion::RoiClusterFusionNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode>(self->node)));
+    =}
+}
+
+main reactor {
+    clf = new camera_lidar_fusion();
+}

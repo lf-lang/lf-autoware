@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "detection_by_tracker_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor detection_by_tracker {
+    state node:{= std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::detection_by_tracker::DetectionByTracker>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker>(self->node)));
+    =}
+}
+
+main reactor {
+    dbt = new detection_by_tracker();
+}

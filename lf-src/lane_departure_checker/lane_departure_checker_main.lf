@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/lane_departure_checker/lane_departure_checker_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor lane_departure_checker {
+    state node:{= std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::lane_departure_checker::LaneDepartureCheckerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    ldc = new lane_departure_checker();
+}

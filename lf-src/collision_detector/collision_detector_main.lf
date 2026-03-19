@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/collision_detector/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor collision_detector {
+    state node:{= std::shared_ptr<autoware::collision_detector::CollisionDetectorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::collision_detector::CollisionDetectorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::collision_detector::CollisionDetectorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::collision_detector::CollisionDetectorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    cd = new collision_detector();
+}

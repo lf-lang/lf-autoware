@@ -1,39 +1,31 @@
 /**
  * Control sub-reactor: groups all control nodes.
- *
- * Contains:
- * - TrajectoryFollower: MPC lateral + PID longitudinal control
- * - ShiftDecider: gear selection based on trajectory
- * - VehicleCmdGate: command safety gate
  */
 target CCpp;
 
 import trajectory_follower from "../trajectory_follower/trajectory_follower_main.lf";
 import shift_decider from "../shift_decider/shift_decider_main.lf";
 import vehicle_cmd_gate from "../vehicle_cmd_gate/vehicle_cmd_gate_main.lf";
+import operation_mode_transition_manager from "../operation_mode_transition_manager/operation_mode_transition_manager_main.lf";
+import lane_departure_checker from "../lane_departure_checker/lane_departure_checker_main.lf";
+import control_validator from "../control_validator/control_validator_main.lf";
+import autonomous_emergency_braking from "../autonomous_emergency_braking/autonomous_emergency_braking_main.lf";
+import collision_detector from "../collision_detector/collision_detector_main.lf";
 
 reactor Control {
-    // Final outputs: vehicle commands
     output control_cmd_out:std::shared_ptr<autoware_control_msgs::msg::Control>;
     output gear_cmd_out:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
     output turn_indicators_cmd_out:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
     output hazard_lights_cmd_out:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
 
-    // Instantiate control sub-reactors
     tf = new trajectory_follower();
     sd = new shift_decider();
     vcg = new vehicle_cmd_gate();
-
-    // Wiring:
-    // TrajectoryFollower produces control commands.
-    // ShiftDecider produces gear commands.
-    // VehicleCmdGate receives these via ROS2 polling subscribers and
-    // acts as the safety gate, producing the final commands.
-    //
-    // In Phase 2 Option B, trajectory_follower and shift_decider publish
-    // their outputs via ROS2 (through their own publishers, which are still
-    // active). VehicleCmdGate picks them up via polling subscribers.
-    // The LF outputs from vehicle_cmd_gate are the final control commands.
+    omtm = new operation_mode_transition_manager();
+    ldc = new lane_departure_checker();
+    cv = new control_validator();
+    aeb = new autonomous_emergency_braking();
+    cd = new collision_detector();
 
     vcg.control_cmd -> control_cmd_out;
     vcg.gear_cmd -> gear_cmd_out;

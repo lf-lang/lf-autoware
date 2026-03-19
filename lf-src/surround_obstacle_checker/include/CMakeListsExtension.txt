@@ -1,0 +1,44 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_surround_obstacle_checker/src
+)
+
+find_package(autoware_surround_obstacle_checker REQUIRED)
+find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_surround_obstacle_checker
+    autoware_internal_planning_msgs
+    autoware_motion_utils
+    autoware_perception_msgs
+    autoware_planning_msgs
+    autoware_utils
+    autoware_vehicle_info_utils
+    diagnostic_msgs
+    pcl_conversions
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    tf2
+    tf2_eigen
+    tf2_ros
+    visualization_msgs
+)

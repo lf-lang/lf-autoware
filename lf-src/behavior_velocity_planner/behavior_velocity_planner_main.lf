@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/behavior_velocity_planner/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor behavior_velocity_planner {
+    state node:{= std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    bvp = new behavior_velocity_planner();
+}

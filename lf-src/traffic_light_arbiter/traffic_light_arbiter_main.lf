@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/traffic_light_arbiter/traffic_light_arbiter.hpp"
+    #include "utils.hpp"
+=}
+
+reactor traffic_light_arbiter {
+    state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightArbiter> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::TrafficLightArbiter>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::TrafficLightArbiter>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::TrafficLightArbiter>(self->node)));
+    =}
+}
+
+main reactor {
+    tla = new traffic_light_arbiter();
+}

@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor motion_velocity_planner {
+    state node:{= std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::motion_velocity_planner::MotionVelocityPlannerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    mvp = new motion_velocity_planner();
+}

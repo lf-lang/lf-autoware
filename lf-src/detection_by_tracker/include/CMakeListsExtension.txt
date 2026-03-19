@@ -1,0 +1,32 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detection_by_tracker/src
+)
+
+find_package(autoware_detection_by_tracker REQUIRED)
+find_package(autoware_euclidean_cluster REQUIRED)
+find_package(autoware_object_recognition_utils REQUIRED)
+find_package(autoware_shape_estimation REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_detection_by_tracker
+    autoware_euclidean_cluster
+    autoware_object_recognition_utils
+    autoware_shape_estimation
+    autoware_utils
+    rclcpp
+    rclcpp_components
+    tf2
+    tf2_geometry_msgs
+    tf2_ros
+)

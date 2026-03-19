@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor pointcloud_map_filter {
+    state node:{= std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    pmf = new pointcloud_map_filter();
+}

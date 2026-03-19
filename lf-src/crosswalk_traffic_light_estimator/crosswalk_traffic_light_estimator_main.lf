@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware_crosswalk_traffic_light_estimator/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor crosswalk_traffic_light_estimator {
+    state node:{= std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    ctle = new crosswalk_traffic_light_estimator();
+}

@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/path_smoother/elastic_band_smoother.hpp"
+    #include "utils.hpp"
+=}
+
+reactor path_smoother {
+    state node:{= std::shared_ptr<autoware::path_smoother::ElasticBandSmoother> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::path_smoother::ElasticBandSmoother>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::path_smoother::ElasticBandSmoother>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::path_smoother::ElasticBandSmoother>(self->node)));
+    =}
+}
+
+main reactor {
+    ps = new path_smoother();
+}

@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/path_optimizer/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor path_optimizer {
+    state node:{= std::shared_ptr<autoware::path_optimizer::PathOptimizer> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::path_optimizer::PathOptimizer>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::path_optimizer::PathOptimizer>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::path_optimizer::PathOptimizer>(self->node)));
+    =}
+}
+
+main reactor {
+    po = new path_optimizer();
+}

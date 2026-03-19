@@ -1,0 +1,51 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_autonomous_emergency_braking REQUIRED)
+find_package(autoware_control_msgs REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_system_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(autoware_vehicle_msgs REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_autonomous_emergency_braking
+    autoware_control_msgs
+    autoware_motion_utils
+    autoware_planning_msgs
+    autoware_system_msgs
+    autoware_utils
+    autoware_vehicle_info_utils
+    autoware_vehicle_msgs
+    diagnostic_updater
+    geometry_msgs
+    nav_msgs
+    pcl_conversions
+    pcl_ros
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    tf2
+    tf2_eigen
+    tf2_ros
+    visualization_msgs
+)

@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor traffic_light_occlusion_predictor {
+    state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightOcclusionPredictorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::TrafficLightOcclusionPredictorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::TrafficLightOcclusionPredictorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::TrafficLightOcclusionPredictorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    tlop = new traffic_light_occlusion_predictor();
+}

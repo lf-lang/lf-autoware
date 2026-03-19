@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor surround_obstacle_checker {
+    state node:{= std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    soc = new surround_obstacle_checker();
+}

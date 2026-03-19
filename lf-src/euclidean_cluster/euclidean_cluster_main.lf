@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "voxel_grid_based_euclidean_cluster_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor euclidean_cluster {
+    state node:{= std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>(self->node)));
+    =}
+}
+
+main reactor {
+    ec = new euclidean_cluster();
+}

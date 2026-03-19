@@ -1,25 +1,42 @@
 /**
- * Perception sub-reactor: groups core perception nodes.
- *
- * Contains:
- * - GroundSegmentation: separates ground from obstacle points
- * - LidarCenterpoint: DNN 3D object detection
- * - MultiObjectTracker: tracks objects across frames
- * - MapBasedPrediction: predicts object trajectories
- * - OccupancyGridMap: occupancy grid representation
+ * Perception sub-reactor: groups all perception nodes.
  */
 target CCpp;
 
 import ground_segmentation from "../ground_segmentation/ground_segmentation_main.lf";
 import lidar_centerpoint from "../lidar_centerpoint/lidar_centerpoint_main.lf";
+import euclidean_cluster from "../euclidean_cluster/euclidean_cluster_main.lf";
+import pointcloud_map_filter from "../pointcloud_map_filter/pointcloud_map_filter_main.lf";
+import detection_by_tracker from "../detection_by_tracker/detection_by_tracker_main.lf";
+import object_validator from "../object_validator/object_validator_main.lf";
+import object_filter from "../object_filter/object_filter_main.lf";
+import camera_lidar_fusion from "../camera_lidar_fusion/camera_lidar_fusion_main.lf";
 import multi_object_tracker from "../multi_object_tracker/multi_object_tracker_main.lf";
 import map_based_prediction from "../map_based_prediction/map_based_prediction_main.lf";
 import occupancy_grid_map from "../occupancy_grid_map/occupancy_grid_map_main.lf";
+import traffic_light_map_based_detector from "../traffic_light_map_based_detector/traffic_light_map_based_detector_main.lf";
+import traffic_light_fine_detector from "../traffic_light_fine_detector/traffic_light_fine_detector_main.lf";
+import traffic_light_classifier from "../traffic_light_classifier/traffic_light_classifier_main.lf";
+import traffic_light_arbiter from "../traffic_light_arbiter/traffic_light_arbiter_main.lf";
+import traffic_light_occlusion_predictor from "../traffic_light_occlusion_predictor/traffic_light_occlusion_predictor_main.lf";
+import crosswalk_traffic_light_estimator from "../crosswalk_traffic_light_estimator/crosswalk_traffic_light_estimator_main.lf";
 
 reactor Perception {
     gs = new ground_segmentation();
     lcp = new lidar_centerpoint();
+    ec = new euclidean_cluster();
+    pmf = new pointcloud_map_filter();
+    dbt = new detection_by_tracker();
+    ov = new object_validator();
+    of = new object_filter();
+    clf = new camera_lidar_fusion();
     mot = new multi_object_tracker();
     mbp = new map_based_prediction();
     ogm = new occupancy_grid_map();
+    tlmbd = new traffic_light_map_based_detector();
+    tlfd = new traffic_light_fine_detector();
+    tlc = new traffic_light_classifier();
+    tla = new traffic_light_arbiter();
+    tlop = new traffic_light_occlusion_predictor();
+    ctle = new crosswalk_traffic_light_estimator();
 }

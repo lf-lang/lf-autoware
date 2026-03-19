@@ -11,13 +11,16 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/include
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_mission_planner/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_scenario_selector/include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_surround_obstacle_checker/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_shift_decider/include
     ${LF_AUTOWARE_HOME}/build/autoware_shift_decider/include
     ${LF_AUTOWARE_HOME}/build/autoware_costmap_generator/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_trajectory_follower_node/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_operation_mode_transition_manager/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/autoware_velocity_smoother/include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/motion_velocity_planner/autoware_motion_velocity_planner/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/sensing/autoware_crop_box_filter/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/sensing/autoware_imu_corrector/include
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/sensing/autoware_vehicle_velocity_converter/src
@@ -32,6 +35,14 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_map_based_prediction/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/src/pointcloud_based_occupancy_grid_map
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_euclidean_cluster/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_compare_map_segmentation/src/voxel_based_approximate_compare_map_filter
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detection_by_tracker/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detected_object_validation/src/obstacle_pointcloud
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detected_object_validation/src/lanelet_filter
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_map_based_detector/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_classifier/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_occlusion_predictor/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/include
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/pointcloud_map_loader
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/lanelet2_map_loader
@@ -50,26 +61,40 @@ if(NOT TARGET QHULL::QHULL)
 endif()
 
 find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_autonomous_emergency_braking REQUIRED)
 find_package(autoware_behavior_path_planner REQUIRED)
 find_package(autoware_behavior_path_planner_common REQUIRED)
+find_package(autoware_behavior_velocity_planner REQUIRED)
+find_package(autoware_behavior_velocity_planner_common REQUIRED)
+find_package(autoware_boundary_departure_checker REQUIRED)
+find_package(autoware_collision_detector REQUIRED)
+find_package(autoware_compare_map_segmentation REQUIRED)
 find_package(autoware_component_interface_specs REQUIRED)
 find_package(autoware_component_interface_specs_universe REQUIRED)
 find_package(autoware_component_interface_utils REQUIRED)
 find_package(autoware_control_msgs REQUIRED)
+find_package(autoware_control_validator REQUIRED)
 find_package(autoware_costmap_generator REQUIRED)
 find_package(autoware_crop_box_filter REQUIRED)
+find_package(autoware_crosswalk_traffic_light_estimator REQUIRED)
+find_package(autoware_detected_object_validation REQUIRED)
+find_package(autoware_detection_by_tracker REQUIRED)
 find_package(autoware_ekf_localizer REQUIRED)
+find_package(autoware_euclidean_cluster REQUIRED)
+find_package(autoware_external_velocity_limit_selector REQUIRED)
 find_package(autoware_freespace_planner REQUIRED)
 find_package(autoware_freespace_planning_algorithms REQUIRED)
 find_package(autoware_grid_map_utils REQUIRED)
 find_package(autoware_ground_segmentation REQUIRED)
 find_package(autoware_gyro_odometer REQUIRED)
+find_package(autoware_image_projection_based_fusion REQUIRED)
 find_package(autoware_imu_corrector REQUIRED)
 find_package(autoware_internal_debug_msgs REQUIRED)
 find_package(autoware_internal_localization_msgs REQUIRED)
 find_package(autoware_internal_planning_msgs REQUIRED)
 find_package(autoware_interpolation REQUIRED)
 find_package(autoware_kalman_filter REQUIRED)
+find_package(autoware_lane_departure_checker REQUIRED)
 find_package(autoware_lanelet2_extension REQUIRED)
 find_package(autoware_lanelet2_utils REQUIRED)
 find_package(autoware_lidar_centerpoint REQUIRED)
@@ -79,22 +104,38 @@ find_package(autoware_map_loader REQUIRED)
 find_package(autoware_map_msgs REQUIRED)
 find_package(autoware_mission_planner REQUIRED)
 find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_motion_velocity_planner REQUIRED)
+find_package(autoware_motion_velocity_planner_common REQUIRED)
 find_package(autoware_mpc_lateral_controller REQUIRED)
 find_package(autoware_multi_object_tracker REQUIRED)
 find_package(autoware_ndt_scan_matcher REQUIRED)
 find_package(autoware_object_recognition_utils REQUIRED)
+find_package(autoware_operation_mode_transition_manager REQUIRED)
+find_package(autoware_osqp_interface REQUIRED)
+find_package(autoware_path_optimizer REQUIRED)
+find_package(autoware_path_smoother REQUIRED)
 find_package(autoware_perception_msgs REQUIRED)
 find_package(autoware_pid_longitudinal_controller REQUIRED)
 find_package(autoware_planning_factor_interface REQUIRED)
 find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_planning_validator REQUIRED)
 find_package(autoware_point_types REQUIRED)
 find_package(autoware_pointcloud_preprocessor REQUIRED)
 find_package(autoware_probabilistic_occupancy_grid_map REQUIRED)
 find_package(autoware_qos_utils REQUIRED)
 find_package(autoware_route_handler REQUIRED)
 find_package(autoware_scenario_selector REQUIRED)
+find_package(autoware_shape_estimation REQUIRED)
 find_package(autoware_shift_decider REQUIRED)
+find_package(autoware_signal_processing REQUIRED)
+find_package(autoware_surround_obstacle_checker REQUIRED)
 find_package(autoware_system_msgs REQUIRED)
+find_package(autoware_tensorrt_yolox REQUIRED)
+find_package(autoware_traffic_light_arbiter REQUIRED)
+find_package(autoware_traffic_light_classifier REQUIRED)
+find_package(autoware_traffic_light_map_based_detector REQUIRED)
+find_package(autoware_traffic_light_occlusion_predictor REQUIRED)
+find_package(autoware_traffic_light_utils REQUIRED)
 find_package(autoware_trajectory_follower_base REQUIRED)
 find_package(autoware_trajectory_follower_node REQUIRED)
 find_package(autoware_utils REQUIRED)
@@ -104,6 +145,7 @@ find_package(autoware_utils_geometry REQUIRED)
 find_package(autoware_utils_logging REQUIRED)
 find_package(autoware_utils_math REQUIRED)
 find_package(autoware_utils_pcl REQUIRED)
+find_package(autoware_utils_rclcpp REQUIRED)
 find_package(autoware_utils_system REQUIRED)
 find_package(autoware_utils_tf REQUIRED)
 find_package(autoware_utils_visualization REQUIRED)
@@ -113,6 +155,7 @@ find_package(autoware_vehicle_msgs REQUIRED)
 find_package(autoware_vehicle_velocity_converter REQUIRED)
 find_package(autoware_velocity_smoother REQUIRED)
 find_package(cuda_blackboard REQUIRED)
+find_package(cv_bridge REQUIRED)
 find_package(diagnostic_msgs REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(eigen3_cmake_module REQUIRED)
@@ -122,6 +165,8 @@ find_package(geometry_msgs REQUIRED)
 find_package(glog REQUIRED)
 find_package(grid_map_costmap_2d REQUIRED)
 find_package(grid_map_ros REQUIRED)
+find_package(image_geometry REQUIRED)
+find_package(image_transport REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(message_filters REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
@@ -151,26 +196,40 @@ find_package(yaml-cpp REQUIRED)
 
 ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_adapi_v1_msgs
+    autoware_autonomous_emergency_braking
     autoware_behavior_path_planner
     autoware_behavior_path_planner_common
+    autoware_behavior_velocity_planner
+    autoware_behavior_velocity_planner_common
+    autoware_boundary_departure_checker
+    autoware_collision_detector
+    autoware_compare_map_segmentation
     autoware_component_interface_specs
     autoware_component_interface_specs_universe
     autoware_component_interface_utils
     autoware_control_msgs
+    autoware_control_validator
     autoware_costmap_generator
     autoware_crop_box_filter
+    autoware_crosswalk_traffic_light_estimator
+    autoware_detected_object_validation
+    autoware_detection_by_tracker
     autoware_ekf_localizer
+    autoware_euclidean_cluster
+    autoware_external_velocity_limit_selector
     autoware_freespace_planner
     autoware_freespace_planning_algorithms
     autoware_grid_map_utils
     autoware_ground_segmentation
     autoware_gyro_odometer
+    autoware_image_projection_based_fusion
     autoware_imu_corrector
     autoware_internal_debug_msgs
     autoware_internal_localization_msgs
     autoware_internal_planning_msgs
     autoware_interpolation
     autoware_kalman_filter
+    autoware_lane_departure_checker
     autoware_lanelet2_extension
     autoware_lanelet2_utils
     autoware_lidar_centerpoint
@@ -180,22 +239,38 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_map_msgs
     autoware_mission_planner
     autoware_motion_utils
+    autoware_motion_velocity_planner
+    autoware_motion_velocity_planner_common
     autoware_mpc_lateral_controller
     autoware_multi_object_tracker
     autoware_ndt_scan_matcher
     autoware_object_recognition_utils
+    autoware_operation_mode_transition_manager
+    autoware_osqp_interface
+    autoware_path_optimizer
+    autoware_path_smoother
     autoware_perception_msgs
     autoware_pid_longitudinal_controller
     autoware_planning_factor_interface
     autoware_planning_msgs
+    autoware_planning_validator
     autoware_point_types
     autoware_pointcloud_preprocessor
     autoware_probabilistic_occupancy_grid_map
     autoware_qos_utils
     autoware_route_handler
     autoware_scenario_selector
+    autoware_shape_estimation
     autoware_shift_decider
+    autoware_signal_processing
+    autoware_surround_obstacle_checker
     autoware_system_msgs
+    autoware_tensorrt_yolox
+    autoware_traffic_light_arbiter
+    autoware_traffic_light_classifier
+    autoware_traffic_light_map_based_detector
+    autoware_traffic_light_occlusion_predictor
+    autoware_traffic_light_utils
     autoware_trajectory_follower_base
     autoware_trajectory_follower_node
     autoware_utils
@@ -205,6 +280,7 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_utils_logging
     autoware_utils_math
     autoware_utils_pcl
+    autoware_utils_rclcpp
     autoware_utils_system
     autoware_utils_tf
     autoware_utils_visualization
@@ -214,6 +290,7 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_vehicle_velocity_converter
     autoware_velocity_smoother
     cuda_blackboard
+    cv_bridge
     diagnostic_msgs
     diagnostic_updater
     Eigen3
@@ -222,6 +299,8 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     glog
     grid_map_costmap_2d
     grid_map_ros
+    image_geometry
+    image_transport
     laser_geometry
     message_filters
     nav2_costmap_2d
@@ -302,6 +381,76 @@ find_library(LIB_POINTCLOUD_MAP_LOADER pointcloud_map_loader_node
     PATHS ${autoware_map_loader_DIR}/../../../lib NO_DEFAULT_PATH)
 find_library(LIB_LANELET2_MAP_LOADER lanelet2_map_loader_node
     PATHS ${autoware_map_loader_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_BEHAVIOR_VELOCITY_PLANNER autoware_behavior_velocity_planner_lib
+    PATHS ${autoware_behavior_velocity_planner_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_BEHAVIOR_VELOCITY_PLANNER_COMMON autoware_behavior_velocity_planner_common
+    PATHS ${autoware_behavior_velocity_planner_common_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PATH_SMOOTHER autoware_path_smoother
+    PATHS ${autoware_path_smoother_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PATH_OPTIMIZER autoware_path_optimizer
+    PATHS ${autoware_path_optimizer_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_MOTION_VELOCITY_PLANNER autoware_motion_velocity_planner_lib
+    PATHS ${autoware_motion_velocity_planner_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_MOTION_VELOCITY_PLANNER_COMMON autoware_motion_velocity_planner_common_lib
+    PATHS ${autoware_motion_velocity_planner_common_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SURROUND_OBSTACLE_CHECKER autoware_surround_obstacle_checker
+    PATHS ${autoware_surround_obstacle_checker_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PLANNING_VALIDATOR autoware_planning_validator_component
+    PATHS ${autoware_planning_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_EXTERNAL_VELOCITY_LIMIT_SELECTOR external_velocity_limit_selector_node
+    PATHS ${autoware_external_velocity_limit_selector_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OPERATION_MODE_TRANSITION_MANAGER autoware_operation_mode_transition_manager_node
+    PATHS ${autoware_operation_mode_transition_manager_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_LANE_DEPARTURE_CHECKER autoware_lane_departure_checker
+    PATHS ${autoware_lane_departure_checker_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_BOUNDARY_DEPARTURE_CHECKER boundary_departure_checker
+    PATHS ${autoware_boundary_departure_checker_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CONTROL_VALIDATOR autoware_control_validator_component
+    PATHS ${autoware_control_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CONTROL_VALIDATOR_HELPERS autoware_control_validator_helpers
+    PATHS ${autoware_control_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_AEB autoware_autonomous_emergency_braking_node
+    PATHS ${autoware_autonomous_emergency_braking_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_AEB_HELPERS autoware_autonomous_emergency_braking_helpers
+    PATHS ${autoware_autonomous_emergency_braking_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_COLLISION_DETECTOR autoware_collision_detector
+    PATHS ${autoware_collision_detector_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_EUCLIDEAN_CLUSTER_LIB autoware_euclidean_cluster_lib
+    PATHS ${autoware_euclidean_cluster_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_EUCLIDEAN_CLUSTER_NODE autoware_euclidean_cluster_node_core
+    PATHS ${autoware_euclidean_cluster_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_COMPARE_MAP_SEGMENTATION autoware_compare_map_segmentation
+    PATHS ${autoware_compare_map_segmentation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_DETECTION_BY_TRACKER autoware_detection_by_tracker
+    PATHS ${autoware_detection_by_tracker_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SHAPE_ESTIMATION autoware_shape_estimation
+    PATHS ${autoware_shape_estimation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SHAPE_ESTIMATION_LIB autoware_shape_estimation_lib
+    PATHS ${autoware_shape_estimation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OBSTACLE_POINTCLOUD_VALIDATOR obstacle_pointcloud_based_validator
+    PATHS ${autoware_detected_object_validation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OBJECT_LANELET_FILTER object_lanelet_filter
+    PATHS ${autoware_detected_object_validation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OBJECT_POSITION_FILTER object_position_filter
+    PATHS ${autoware_detected_object_validation_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_IMAGE_PROJECTION_BASED_FUSION autoware_image_projection_based_fusion
+    PATHS ${autoware_image_projection_based_fusion_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAFFIC_LIGHT_MAP_BASED_DETECTOR autoware_traffic_light_map_based_detector
+    PATHS ${autoware_traffic_light_map_based_detector_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAFFIC_LIGHT_CLASSIFIER autoware_traffic_light_classifier
+    PATHS ${autoware_traffic_light_classifier_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAFFIC_LIGHT_ARBITER autoware_traffic_light_arbiter
+    PATHS ${autoware_traffic_light_arbiter_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAFFIC_LIGHT_OCCLUSION_PREDICTOR autoware_traffic_light_occlusion_predictor
+    PATHS ${autoware_traffic_light_occlusion_predictor_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_TRAFFIC_LIGHT_UTILS autoware_traffic_light_utils
+    PATHS ${autoware_traffic_light_utils_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CROSSWALK_TRAFFIC_LIGHT_ESTIMATOR autoware_crosswalk_traffic_light_estimator
+    PATHS ${autoware_crosswalk_traffic_light_estimator_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_OSQP_INTERFACE autoware_osqp_interface
+    PATHS ${autoware_osqp_interface_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_SIGNAL_PROCESSING lowpass_filters
+    PATHS ${autoware_signal_processing_DIR}/../../../lib NO_DEFAULT_PATH)
 
 foreach(lib
     ${LIB_VEHICLE_CMD_GATE} ${LIB_SHIFT_DECIDER} ${LIB_TRAJECTORY_FOLLOWER}
@@ -311,7 +460,28 @@ foreach(lib
     ${LIB_NDT_SCAN_MATCHER} ${LIB_GYRO_ODOMETER} ${LIB_EKF_LOCALIZER}
     ${LIB_GROUND_SEGMENTATION} ${LIB_LIDAR_CENTERPOINT} ${LIB_MULTI_OBJECT_TRACKER}
     ${LIB_MAP_BASED_PREDICTION} ${LIB_OCCUPANCY_GRID_MAP}
-    ${LIB_POINTCLOUD_MAP_LOADER} ${LIB_LANELET2_MAP_LOADER})
+    ${LIB_POINTCLOUD_MAP_LOADER} ${LIB_LANELET2_MAP_LOADER}
+    ${LIB_BEHAVIOR_VELOCITY_PLANNER} ${LIB_BEHAVIOR_VELOCITY_PLANNER_COMMON}
+    ${LIB_PATH_SMOOTHER} ${LIB_PATH_OPTIMIZER}
+    ${LIB_MOTION_VELOCITY_PLANNER} ${LIB_MOTION_VELOCITY_PLANNER_COMMON}
+    ${LIB_SURROUND_OBSTACLE_CHECKER} ${LIB_PLANNING_VALIDATOR}
+    ${LIB_EXTERNAL_VELOCITY_LIMIT_SELECTOR} ${LIB_OPERATION_MODE_TRANSITION_MANAGER}
+    ${LIB_LANE_DEPARTURE_CHECKER} ${LIB_BOUNDARY_DEPARTURE_CHECKER}
+    ${LIB_CONTROL_VALIDATOR} ${LIB_CONTROL_VALIDATOR_HELPERS}
+    ${LIB_AEB} ${LIB_AEB_HELPERS}
+    ${LIB_COLLISION_DETECTOR}
+    ${LIB_EUCLIDEAN_CLUSTER_LIB} ${LIB_EUCLIDEAN_CLUSTER_NODE}
+    ${LIB_COMPARE_MAP_SEGMENTATION}
+    ${LIB_DETECTION_BY_TRACKER} ${LIB_SHAPE_ESTIMATION} ${LIB_SHAPE_ESTIMATION_LIB}
+    ${LIB_OBSTACLE_POINTCLOUD_VALIDATOR} ${LIB_OBJECT_LANELET_FILTER} ${LIB_OBJECT_POSITION_FILTER}
+    ${LIB_IMAGE_PROJECTION_BASED_FUSION}
+    ${LIB_TRAFFIC_LIGHT_MAP_BASED_DETECTOR}
+    ${LIB_TRAFFIC_LIGHT_CLASSIFIER}
+    ${LIB_TRAFFIC_LIGHT_ARBITER}
+    ${LIB_TRAFFIC_LIGHT_OCCLUSION_PREDICTOR}
+    ${LIB_TRAFFIC_LIGHT_UTILS}
+    ${LIB_CROSSWALK_TRAFFIC_LIGHT_ESTIMATOR}
+    ${LIB_OSQP_INTERFACE} ${LIB_SIGNAL_PROCESSING})
     if(lib)
         target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${lib})
     endif()

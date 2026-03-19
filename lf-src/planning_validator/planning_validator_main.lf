@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/planning_validator/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor planning_validator {
+    state node:{= std::shared_ptr<autoware::planning_validator::PlanningValidatorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::planning_validator::PlanningValidatorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::planning_validator::PlanningValidatorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::planning_validator::PlanningValidatorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    pv = new planning_validator();
+}

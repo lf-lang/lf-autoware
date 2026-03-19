@@ -1,0 +1,37 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_planning_validator REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_planning_validator
+    autoware_adapi_v1_msgs
+    autoware_motion_utils
+    autoware_planning_msgs
+    autoware_utils
+    autoware_vehicle_info_utils
+    diagnostic_updater
+    geometry_msgs
+    nav_msgs
+    pluginlib
+    rclcpp
+    rclcpp_components
+    visualization_msgs
+)

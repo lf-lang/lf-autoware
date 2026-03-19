@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "traffic_light_classifier_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor traffic_light_classifier {
+    state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightClassifierNodelet> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::TrafficLightClassifierNodelet>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::TrafficLightClassifierNodelet>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::TrafficLightClassifierNodelet>(self->node)));
+    =}
+}
+
+main reactor {
+    tlc = new traffic_light_classifier();
+}

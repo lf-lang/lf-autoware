@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/external_velocity_limit_selector/external_velocity_limit_selector_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor external_velocity_limit_selector {
+    state node:{= std::shared_ptr<autoware::external_velocity_limit_selector::ExternalVelocityLimitSelectorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::external_velocity_limit_selector::ExternalVelocityLimitSelectorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::external_velocity_limit_selector::ExternalVelocityLimitSelectorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::external_velocity_limit_selector::ExternalVelocityLimitSelectorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    evls = new external_velocity_limit_selector();
+}

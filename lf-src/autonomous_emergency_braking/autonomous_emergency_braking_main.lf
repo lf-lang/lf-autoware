@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "autoware/autonomous_emergency_braking/node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor autonomous_emergency_braking {
+    state node:{= std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::motion::control::autonomous_emergency_braking::AEB>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB>(self->node)));
+    =}
+}
+
+main reactor {
+    aeb = new autonomous_emergency_braking();
+}

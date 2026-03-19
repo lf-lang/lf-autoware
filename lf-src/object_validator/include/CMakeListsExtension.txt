@@ -1,0 +1,34 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detected_object_validation/src/obstacle_pointcloud
+)
+
+find_package(autoware_detected_object_validation REQUIRED)
+find_package(autoware_object_recognition_utils REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_detected_object_validation
+    autoware_object_recognition_utils
+    autoware_perception_msgs
+    autoware_utils
+    message_filters
+    nav_msgs
+    pcl_conversions
+    rclcpp
+    rclcpp_components
+    tf2_geometry_msgs
+    tf2_ros
+)

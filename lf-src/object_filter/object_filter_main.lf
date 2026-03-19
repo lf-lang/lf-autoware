@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "detected_object_lanelet_filter.hpp"
+    #include "utils.hpp"
+=}
+
+reactor object_filter {
+    state node:{= std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>(self->node)));
+    =}
+}
+
+main reactor {
+    of = new object_filter();
+}

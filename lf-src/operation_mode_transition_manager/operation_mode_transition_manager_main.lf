@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor operation_mode_transition_manager {
+    state node:{= std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::operation_mode_transition_manager::OperationModeTransitionManager>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager>(self->node)));
+    =}
+}
+
+main reactor {
+    omtm = new operation_mode_transition_manager();
+}

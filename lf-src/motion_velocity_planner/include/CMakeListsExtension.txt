@@ -1,0 +1,52 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/planning/motion_velocity_planner/autoware_motion_velocity_planner/src
+)
+
+find_package(autoware_motion_velocity_planner REQUIRED)
+find_package(autoware_motion_velocity_planner_common REQUIRED)
+find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_perception_msgs REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_utils_debug REQUIRED)
+find_package(autoware_utils_geometry REQUIRED)
+find_package(autoware_utils_logging REQUIRED)
+find_package(autoware_utils_rclcpp REQUIRED)
+find_package(autoware_utils_system REQUIRED)
+find_package(autoware_velocity_smoother REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_motion_velocity_planner
+    autoware_motion_velocity_planner_common
+    autoware_internal_planning_msgs
+    autoware_map_msgs
+    autoware_motion_utils
+    autoware_perception_msgs
+    autoware_planning_msgs
+    autoware_utils_debug
+    autoware_utils_geometry
+    autoware_utils_logging
+    autoware_utils_rclcpp
+    autoware_utils_system
+    autoware_velocity_smoother
+    pluginlib
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    tf2
+    tf2_ros
+    visualization_msgs
+)

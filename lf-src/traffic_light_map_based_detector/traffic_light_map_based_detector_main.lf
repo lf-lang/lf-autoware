@@ -1,0 +1,28 @@
+target CCpp;
+
+preamble {=
+    #include "traffic_light_map_based_detector_node.hpp"
+    #include "utils.hpp"
+=}
+
+reactor traffic_light_map_based_detector {
+    state node:{= std::shared_ptr<autoware::traffic_light::MapBasedDetector> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::MapBasedDetector>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::MapBasedDetector>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::MapBasedDetector>(self->node)));
+    =}
+}
+
+main reactor {
+    tlmbd = new traffic_light_map_based_detector();
+}
