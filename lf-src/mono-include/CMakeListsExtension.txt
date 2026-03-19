@@ -37,20 +37,24 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_gyro_odometer/src
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_ekf_localizer/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_ground_segmentation/src/scan_ground_filter
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/sensing/autoware_pointcloud_preprocessor/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_lidar_centerpoint/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_multi_object_tracker/src/debugger
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_map_based_prediction/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/src/pointcloud_based_occupancy_grid_map
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_euclidean_cluster/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_compare_map_segmentation/src/voxel_based_approximate_compare_map_filter
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_compare_map_segmentation
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detection_by_tracker/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detected_object_validation/src/obstacle_pointcloud
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_detected_object_validation/src/lanelet_filter
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_map_based_detector/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_classifier/src
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_occlusion_predictor/src
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_occlusion_predictor
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/include
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/pointcloud_map_loader
     ${LF_AUTOWARE_HOME}/src/core/autoware_core/map/autoware_map_loader/src/lanelet2_map_loader

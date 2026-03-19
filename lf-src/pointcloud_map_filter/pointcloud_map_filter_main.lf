@@ -1,7 +1,7 @@
 target CCpp;
 
 preamble {=
-    #include "node.hpp"
+    #include "autoware_compare_map_segmentation/node.hpp"
     #include "utils.hpp"
 =}
 

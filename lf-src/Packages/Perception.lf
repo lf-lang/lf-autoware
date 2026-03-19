@@ -15,7 +15,7 @@ import multi_object_tracker from "../multi_object_tracker/multi_object_tracker_m
 import map_based_prediction from "../map_based_prediction/map_based_prediction_main.lf";
 import occupancy_grid_map from "../occupancy_grid_map/occupancy_grid_map_main.lf";
 import traffic_light_map_based_detector from "../traffic_light_map_based_detector/traffic_light_map_based_detector_main.lf";
-import traffic_light_fine_detector from "../traffic_light_fine_detector/traffic_light_fine_detector_main.lf";
+// traffic_light_fine_detector skipped — no cmake config available
 import traffic_light_classifier from "../traffic_light_classifier/traffic_light_classifier_main.lf";
 import traffic_light_arbiter from "../traffic_light_arbiter/traffic_light_arbiter_main.lf";
 import traffic_light_occlusion_predictor from "../traffic_light_occlusion_predictor/traffic_light_occlusion_predictor_main.lf";
@@ -34,7 +34,7 @@ reactor Perception {
     mbp = new map_based_prediction();
     ogm = new occupancy_grid_map();
     tlmbd = new traffic_light_map_based_detector();
-    tlfd = new traffic_light_fine_detector();
+    // tlfd = new traffic_light_fine_detector(); // skipped
     tlc = new traffic_light_classifier();
     tla = new traffic_light_arbiter();
     tlop = new traffic_light_occlusion_predictor();

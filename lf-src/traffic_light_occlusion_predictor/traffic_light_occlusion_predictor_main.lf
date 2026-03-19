@@ -1,7 +1,8 @@
 target CCpp;
 
 preamble {=
-    #include "node.hpp"
+    // Use full path to avoid ambiguity with other node.hpp files
+    #include "autoware_traffic_light_occlusion_predictor/node.hpp"
     #include "utils.hpp"
 =}
 
