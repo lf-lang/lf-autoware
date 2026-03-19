@@ -5,7 +5,9 @@
  * autoware_state, and current_gear via InterProcessPollingSubscriber,
  * then publishes a gear command.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/shift_decider/autoware_shift_decider.hpp"

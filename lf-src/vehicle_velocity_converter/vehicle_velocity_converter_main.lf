@@ -5,7 +5,9 @@
  * TwistWithCovarianceStamped. Runs passively via ROS callbacks
  * in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "vehicle_velocity_converter.hpp"

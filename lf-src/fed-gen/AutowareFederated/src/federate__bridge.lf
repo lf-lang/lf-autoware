@@ -1,0 +1,202 @@
+target CCpp {
+  cmake-include: [
+      "../../../bridge_interface/include/CMakeListsExtension.txt",
+      "include/federate__bridge_extension.cmake"],
+  compile-definitions: {
+    FEDERATED_DECENTRALIZED: "",
+    EXECUTABLE_PREAMBLE: "",
+    NUMBER_OF_FEDERATES: "46",
+    FEDERATE_ID: "45",
+    FEDERATED: "",
+    LF_CLOCK_SYNC: "1",
+    _LF_FEDERATE_NAMES_COMMA_SEPARATED: "\"federate__cbf,federate__imu,federate__vvc,federate__ndt,federate__gyro,federate__ekf,federate__pcm,federate__l2m,federate__gs,federate__lcp,federate__ec,federate__pmf,federate__dbt,federate__ov,federate__of,federate__clf,federate__mot,federate__mbp,federate__ogm,federate__tlmbd,federate__tlc,federate__tla,federate__tlop,federate__ctle,federate__mp,federate__bpp,federate__bvp,federate__ps,federate__po,federate__mvp,federate__soc,federate__ss,federate__vs,federate__fp,federate__cg,federate__pv,federate__evls,federate__tf,federate__sd,federate__vcg,federate__omtm,federate__ldc,federate__cv,federate__aeb,federate__cd,federate__bridge\""
+  },
+  coordination: "decentralized",
+  _fed_setup: "include/_federate__bridge_preamble.h",
+  keepalive: true,
+  single-threaded: false
+}
+import bridge_interface from "../../../bridge_interface/bridge_interface_main.lf"
+
+preamble {=
+#include <rclcpp/rclcpp.hpp>
+#include <autoware_control_msgs/msg/control.hpp>
+#include <autoware_vehicle_msgs/msg/gear_command.hpp>
+#include <autoware_vehicle_msgs/msg/turn_indicators_command.hpp>
+#include <autoware_vehicle_msgs/msg/hazard_lights_command.hpp>
+#include "utils.hpp"
+#include "constants.hpp"
+=}
+preamble {=
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "core/federated/federate.h"
+#include "core/federated/network/net_common.h"
+#include "core/federated/network/net_util.h"
+#include "core/federated/network/socket_common.h"
+#include "core/federated/clock-sync.h"
+#include "core/threaded/reactor_threaded.h"
+#include "core/utils/util.h"
+extern federate_instance_t _fed;
+#ifdef __cplusplus
+}
+#endif
+#include "rcutils/allocator.h"
+#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/serialization.hpp"
+#include "rclcpp/serialized_message.hpp"
+
+=}
+
+reactor _bridgecontrol_cmd_in {
+  input port0: std::shared_ptr<autoware_control_msgs::msg::Control>
+
+  output[1] port: std::shared_ptr<autoware_control_msgs::msg::Control>
+
+  port0 -> port
+}
+reactor _bridgegear_cmd_in {
+  input port0: std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
+
+  output[1] port: std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
+
+  port0 -> port
+}
+reactor _bridgeturn_indicators_cmd_in {
+  input port0: std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>
+
+  output[1] port: std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>
+
+  port0 -> port
+}
+reactor _bridgehazard_lights_cmd_in {
+  input port0: std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>
+
+  output[1] port: std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>
+
+  port0 -> port
+}
+@_network_receiver
+reactor NetworkReceiver_1 {
+  output msg: std::shared_ptr<autoware_control_msgs::msg::Control>
+
+  physical action networkMessage: uint8_t*
+
+  reaction(networkMessage) -> msg {=
+    msg->physical_time_of_arrival = self->_lf__networkMessage.physical_time_of_arrival;
+    auto _lf_message = std::make_unique<rcl_serialized_message_t>( rcl_serialized_message_t{
+        .buffer = (uint8_t*)self->_lf__networkMessage.tmplt.token->value,
+        .buffer_length = self->_lf__networkMessage.tmplt.token->length,
+        .buffer_capacity = self->_lf__networkMessage.tmplt.token->length,
+        .allocator = rcl_get_default_allocator()
+    });
+    auto _lf_msg = std::make_unique<rclcpp::SerializedMessage>(std::move(*_lf_message.get()));
+    self->_lf__networkMessage.tmplt.token->value = NULL; // Manually move the data
+    using MessageT = autoware_control_msgs::msg::Control;
+    MessageT deserialized_message = MessageT();
+    auto _lf_serializer = rclcpp::Serialization<MessageT>();
+    _lf_serializer.deserialize_message(_lf_msg.get(), &deserialized_message);
+    auto msg_shared_ptr = std::make_shared<autoware_control_msgs::msg::Control>(deserialized_message);
+    lf_set(msg, msg_shared_ptr);
+  =}
+}
+@_network_receiver
+reactor NetworkReceiver_2 {
+  output msg: std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
+
+  physical action networkMessage: uint8_t*
+
+  reaction(networkMessage) -> msg {=
+    msg->physical_time_of_arrival = self->_lf__networkMessage.physical_time_of_arrival;
+    auto _lf_message = std::make_unique<rcl_serialized_message_t>( rcl_serialized_message_t{
+        .buffer = (uint8_t*)self->_lf__networkMessage.tmplt.token->value,
+        .buffer_length = self->_lf__networkMessage.tmplt.token->length,
+        .buffer_capacity = self->_lf__networkMessage.tmplt.token->length,
+        .allocator = rcl_get_default_allocator()
+    });
+    auto _lf_msg = std::make_unique<rclcpp::SerializedMessage>(std::move(*_lf_message.get()));
+    self->_lf__networkMessage.tmplt.token->value = NULL; // Manually move the data
+    using MessageT = autoware_vehicle_msgs::msg::GearCommand;
+    MessageT deserialized_message = MessageT();
+    auto _lf_serializer = rclcpp::Serialization<MessageT>();
+    _lf_serializer.deserialize_message(_lf_msg.get(), &deserialized_message);
+    auto msg_shared_ptr = std::make_shared<autoware_vehicle_msgs::msg::GearCommand>(deserialized_message);
+    lf_set(msg, msg_shared_ptr);
+  =}
+}
+@_network_receiver
+reactor NetworkReceiver_3 {
+  output msg: std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>
+
+  physical action networkMessage: uint8_t*
+
+  reaction(networkMessage) -> msg {=
+    msg->physical_time_of_arrival = self->_lf__networkMessage.physical_time_of_arrival;
+    auto _lf_message = std::make_unique<rcl_serialized_message_t>( rcl_serialized_message_t{
+        .buffer = (uint8_t*)self->_lf__networkMessage.tmplt.token->value,
+        .buffer_length = self->_lf__networkMessage.tmplt.token->length,
+        .buffer_capacity = self->_lf__networkMessage.tmplt.token->length,
+        .allocator = rcl_get_default_allocator()
+    });
+    auto _lf_msg = std::make_unique<rclcpp::SerializedMessage>(std::move(*_lf_message.get()));
+    self->_lf__networkMessage.tmplt.token->value = NULL; // Manually move the data
+    using MessageT = autoware_vehicle_msgs::msg::TurnIndicatorsCommand;
+    MessageT deserialized_message = MessageT();
+    auto _lf_serializer = rclcpp::Serialization<MessageT>();
+    _lf_serializer.deserialize_message(_lf_msg.get(), &deserialized_message);
+    auto msg_shared_ptr = std::make_shared<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(deserialized_message);
+    lf_set(msg, msg_shared_ptr);
+  =}
+}
+@_network_receiver
+reactor NetworkReceiver_4 {
+  output msg: std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>
+
+  physical action networkMessage: uint8_t*
+
+  reaction(networkMessage) -> msg {=
+    msg->physical_time_of_arrival = self->_lf__networkMessage.physical_time_of_arrival;
+    auto _lf_message = std::make_unique<rcl_serialized_message_t>( rcl_serialized_message_t{
+        .buffer = (uint8_t*)self->_lf__networkMessage.tmplt.token->value,
+        .buffer_length = self->_lf__networkMessage.tmplt.token->length,
+        .buffer_capacity = self->_lf__networkMessage.tmplt.token->length,
+        .allocator = rcl_get_default_allocator()
+    });
+    auto _lf_msg = std::make_unique<rclcpp::SerializedMessage>(std::move(*_lf_message.get()));
+    self->_lf__networkMessage.tmplt.token->value = NULL; // Manually move the data
+    using MessageT = autoware_vehicle_msgs::msg::HazardLightsCommand;
+    MessageT deserialized_message = MessageT();
+    auto _lf_serializer = rclcpp::Serialization<MessageT>();
+    _lf_serializer.deserialize_message(_lf_msg.get(), &deserialized_message);
+    auto msg_shared_ptr = std::make_shared<autoware_vehicle_msgs::msg::HazardLightsCommand>(deserialized_message);
+    lf_set(msg, msg_shared_ptr);
+  =}
+}
+@_fed_config()
+main reactor  {
+
+    bridge = new bridge_interface()
+    
+    
+    
+    
+    
+    
+    nr_federate__bridge = new NetworkReceiver_1()
+    nr_federate__bridge_0 = new NetworkReceiver_2()
+    nr_federate__bridge_1 = new NetworkReceiver_3()
+    nr_federate__bridge_2 = new NetworkReceiver_4()
+    _bridgecontrol_cmd_in0 = new _bridgecontrol_cmd_in()
+    _bridgegear_cmd_in0 = new _bridgegear_cmd_in()
+    _bridgeturn_indicators_cmd_in0 = new _bridgeturn_indicators_cmd_in()
+    _bridgehazard_lights_cmd_in0 = new _bridgehazard_lights_cmd_in()
+    _bridgecontrol_cmd_in0.port -> bridge.control_cmd_in
+    _bridgegear_cmd_in0.port -> bridge.gear_cmd_in
+    _bridgeturn_indicators_cmd_in0.port -> bridge.turn_indicators_cmd_in
+    _bridgehazard_lights_cmd_in0.port -> bridge.hazard_lights_cmd_in
+    nr_federate__bridge.msg -> _bridgecontrol_cmd_in0.port0
+    nr_federate__bridge_0.msg -> _bridgegear_cmd_in0.port0
+    nr_federate__bridge_1.msg -> _bridgeturn_indicators_cmd_in0.port0
+    nr_federate__bridge_2.msg -> _bridgehazard_lights_cmd_in0.port0
+}

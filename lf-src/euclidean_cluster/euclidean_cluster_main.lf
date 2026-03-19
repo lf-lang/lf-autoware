@@ -1,4 +1,6 @@
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "voxel_grid_based_euclidean_cluster_node.hpp"

@@ -9,7 +9,9 @@
  * The ROS2 timer is replaced by an LF timer. The spin thread keeps
  * regular subscriptions and polling subscribers alive.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/scenario_selector/node.hpp"

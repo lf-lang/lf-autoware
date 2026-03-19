@@ -12,6 +12,8 @@ find_package(autoware_vehicle_msgs REQUIRED)
 find_package(autoware_vehicle_info_utils REQUIRED)
 find_package(autoware_motion_utils REQUIRED)
 find_package(autoware_utils REQUIRED)
+find_package(autoware_component_interface_specs_universe REQUIRED)
+find_package(autoware_component_interface_utils REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(tier4_control_msgs REQUIRED)
@@ -34,6 +36,8 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_vehicle_info_utils
     autoware_motion_utils
     autoware_utils
+    autoware_component_interface_specs_universe
+    autoware_component_interface_utils
     rclcpp
     rclcpp_components
     tier4_control_msgs
@@ -44,3 +48,10 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     std_srvs
     diagnostic_updater
 )
+
+# Link node implementation library
+find_library(LIB_VEHICLE_CMD_GATE vehicle_cmd_gate_node
+    PATHS ${autoware_vehicle_cmd_gate_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_VEHICLE_CMD_GATE)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_VEHICLE_CMD_GATE})
+endif()

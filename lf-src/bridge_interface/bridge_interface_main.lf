@@ -15,7 +15,9 @@
  * ROS2 input data (localization, perception, etc.) is consumed directly
  * by each node's spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include <rclcpp/rclcpp.hpp>

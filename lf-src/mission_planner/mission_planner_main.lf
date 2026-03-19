@@ -9,7 +9,9 @@
  * The LF timer polls for new route outputs produced by service callbacks.
  * The spin thread keeps services, subscriptions, and TF alive.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "mission_planner/mission_planner.hpp"

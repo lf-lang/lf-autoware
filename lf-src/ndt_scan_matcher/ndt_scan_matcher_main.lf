@@ -4,7 +4,9 @@
  * This node has a map_update_timer_ and multiple subscription callbacks.
  * For now, it runs entirely via ROS in the spin thread (timer + subscriptions).
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/ndt_scan_matcher/ndt_scan_matcher_core.hpp"

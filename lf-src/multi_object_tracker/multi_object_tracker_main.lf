@@ -4,7 +4,9 @@
  * Subscription-driven node: tracks detected objects across frames.
  * Runs passively via ROS callbacks in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "multi_object_tracker_node.hpp"

@@ -1,0 +1,50 @@
+target CCpp {
+  cmake-include: [
+      "../../../freespace_planner/include/CMakeListsExtension.txt",
+      "include/federate__fp_extension.cmake"],
+  compile-definitions: {
+    FEDERATED_DECENTRALIZED: "",
+    EXECUTABLE_PREAMBLE: "",
+    NUMBER_OF_FEDERATES: "46",
+    FEDERATE_ID: "33",
+    FEDERATED: "",
+    LF_CLOCK_SYNC: "1",
+    _LF_FEDERATE_NAMES_COMMA_SEPARATED: "\"federate__cbf,federate__imu,federate__vvc,federate__ndt,federate__gyro,federate__ekf,federate__pcm,federate__l2m,federate__gs,federate__lcp,federate__ec,federate__pmf,federate__dbt,federate__ov,federate__of,federate__clf,federate__mot,federate__mbp,federate__ogm,federate__tlmbd,federate__tlc,federate__tla,federate__tlop,federate__ctle,federate__mp,federate__bpp,federate__bvp,federate__ps,federate__po,federate__mvp,federate__soc,federate__ss,federate__vs,federate__fp,federate__cg,federate__pv,federate__evls,federate__tf,federate__sd,federate__vcg,federate__omtm,federate__ldc,federate__cv,federate__aeb,federate__cd,federate__bridge\""
+  },
+  coordination: "decentralized",
+  _fed_setup: "include/_federate__fp_preamble.h",
+  keepalive: true,
+  single-threaded: false
+}
+import freespace_planner from "../../../freespace_planner/freespace_planner_main.lf"
+
+preamble {=
+#include "autoware/freespace_planner/freespace_planner_node.hpp"
+#include "utils.hpp"
+#include "constants.hpp"
+=}
+preamble {=
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "core/federated/federate.h"
+#include "core/federated/network/net_common.h"
+#include "core/federated/network/net_util.h"
+#include "core/federated/network/socket_common.h"
+#include "core/federated/clock-sync.h"
+#include "core/threaded/reactor_threaded.h"
+#include "core/utils/util.h"
+extern federate_instance_t _fed;
+#ifdef __cplusplus
+}
+#endif
+
+
+=}
+
+
+@_fed_config()
+main reactor  {
+
+    fp = new freespace_planner()
+}

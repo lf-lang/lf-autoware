@@ -4,7 +4,9 @@
  * Subscription-driven node: segments ground vs obstacle points.
  * Runs passively via ROS callbacks in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "node.hpp"

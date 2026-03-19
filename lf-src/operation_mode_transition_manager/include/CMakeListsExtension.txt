@@ -36,3 +36,10 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     rclcpp
     rclcpp_components
 )
+
+# Link node implementation library
+find_library(LIB_OPERATION_MODE_TRANSITION_MANAGER autoware_operation_mode_transition_manager_node
+    PATHS ${autoware_operation_mode_transition_manager_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_OPERATION_MODE_TRANSITION_MANAGER)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_OPERATION_MODE_TRANSITION_MANAGER})
+endif()

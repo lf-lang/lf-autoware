@@ -1,4 +1,6 @@
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/collision_detector/node.hpp"

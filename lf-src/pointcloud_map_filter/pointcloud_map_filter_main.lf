@@ -1,4 +1,6 @@
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware_compare_map_segmentation/node.hpp"

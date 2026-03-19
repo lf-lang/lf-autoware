@@ -43,3 +43,14 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     tf2_eigen
     tf2_ros
 )
+
+# Fix transitive curl dependency issue from libgdal
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC CURL::libcurl)
+
+# Link node implementation library
+find_library(LIB_IMAGE_PROJECTION_BASED_FUSION autoware_image_projection_based_fusion
+    PATHS ${autoware_image_projection_based_fusion_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_IMAGE_PROJECTION_BASED_FUSION)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_IMAGE_PROJECTION_BASED_FUSION})
+endif()

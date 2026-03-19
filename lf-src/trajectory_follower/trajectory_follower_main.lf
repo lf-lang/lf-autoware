@@ -9,7 +9,9 @@
  * The ROS2 timer is replaced by an LF timer. The spin thread keeps
  * InterProcessPollingSubscribers and TF alive.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/trajectory_follower_node/controller_node.hpp"

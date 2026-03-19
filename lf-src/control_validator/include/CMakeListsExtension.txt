@@ -4,6 +4,7 @@ message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
 
 include_directories(
     ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_control_validator/include
 )
 
 find_package(autoware_control_validator REQUIRED)
@@ -35,3 +36,15 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     rclcpp_components
     visualization_msgs
 )
+
+# Link node implementation libraries
+find_library(LIB_CONTROL_VALIDATOR autoware_control_validator_component
+    PATHS ${autoware_control_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CONTROL_VALIDATOR_HELPERS autoware_control_validator_helpers
+    PATHS ${autoware_control_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_CONTROL_VALIDATOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_CONTROL_VALIDATOR})
+endif()
+if(LIB_CONTROL_VALIDATOR_HELPERS)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_CONTROL_VALIDATOR_HELPERS})
+endif()

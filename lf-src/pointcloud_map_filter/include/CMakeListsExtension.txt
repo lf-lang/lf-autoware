@@ -2,10 +2,24 @@ unset(BUILD_TESTING)
 set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
 message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
 
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
 include_directories(
     ${LF_AUTOWARE_HOME}/lf-src/lf-include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_compare_map_segmentation/src/voxel_based_approximate_compare_map_filter
 )
+
+# Create include alias so "autoware_compare_map_segmentation/node.hpp" resolves
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include_alias/autoware_compare_map_segmentation)
+file(GLOB CMS_HEADERS "${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_compare_map_segmentation/src/voxel_based_approximate_compare_map_filter/*.hpp")
+foreach(hdr ${CMS_HEADERS})
+    get_filename_component(hdr_name ${hdr} NAME)
+    file(CREATE_LINK ${hdr} ${CMAKE_BINARY_DIR}/include_alias/autoware_compare_map_segmentation/${hdr_name} SYMBOLIC)
+endforeach()
+include_directories(${CMAKE_BINARY_DIR}/include_alias)
 
 find_package(autoware_compare_map_segmentation REQUIRED)
 find_package(autoware_pointcloud_preprocessor REQUIRED)
@@ -36,3 +50,14 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     tf2
     tf2_ros
 )
+
+# Fix transitive curl dependency issue from libgdal
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC CURL::libcurl)
+
+# Link node implementation library
+find_library(LIB_COMPARE_MAP_SEGMENTATION autoware_compare_map_segmentation
+    PATHS ${autoware_compare_map_segmentation_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_COMPARE_MAP_SEGMENTATION)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_COMPARE_MAP_SEGMENTATION})
+endif()

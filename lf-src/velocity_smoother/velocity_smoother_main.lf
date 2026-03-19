@@ -6,7 +6,9 @@
  * via InterProcessPollingSubscriber (kept alive by the spin thread)
  * and produces a smoothed trajectory output.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/velocity_smoother/node.hpp"

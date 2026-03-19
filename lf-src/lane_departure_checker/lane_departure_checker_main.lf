@@ -1,4 +1,6 @@
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/lane_departure_checker/lane_departure_checker_node.hpp"

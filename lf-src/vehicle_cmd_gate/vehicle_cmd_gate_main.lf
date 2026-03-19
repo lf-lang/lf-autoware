@@ -8,7 +8,9 @@
  * The ROS2 timers are replaced by LF timers. The spin thread keeps
  * regular subscriptions, services, and polling subscribers alive.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "vehicle_cmd_gate.hpp"

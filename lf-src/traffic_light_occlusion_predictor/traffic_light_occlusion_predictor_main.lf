@@ -1,4 +1,6 @@
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     // Use full path to avoid ambiguity with other node.hpp files

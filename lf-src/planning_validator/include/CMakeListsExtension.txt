@@ -4,6 +4,7 @@ message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
 
 include_directories(
     ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/planning_validator/autoware_planning_validator/include
 )
 
 find_package(autoware_planning_validator REQUIRED)
@@ -12,6 +13,8 @@ find_package(autoware_motion_utils REQUIRED)
 find_package(autoware_planning_msgs REQUIRED)
 find_package(autoware_utils REQUIRED)
 find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(autoware_route_handler REQUIRED)
+find_package(autoware_planning_factor_interface REQUIRED)
 find_package(diagnostic_updater REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
@@ -27,6 +30,8 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_planning_msgs
     autoware_utils
     autoware_vehicle_info_utils
+    autoware_route_handler
+    autoware_planning_factor_interface
     diagnostic_updater
     geometry_msgs
     nav_msgs
@@ -35,3 +40,10 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     rclcpp_components
     visualization_msgs
 )
+
+# Link node implementation library
+find_library(LIB_PLANNING_VALIDATOR autoware_planning_validator_component
+    PATHS ${autoware_planning_validator_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_PLANNING_VALIDATOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PLANNING_VALIDATOR})
+endif()

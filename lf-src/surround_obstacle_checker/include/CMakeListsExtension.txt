@@ -5,6 +5,7 @@ message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
 include_directories(
     ${LF_AUTOWARE_HOME}/lf-src/lf-include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_surround_obstacle_checker/src
+    ${LF_AUTOWARE_HOME}/build/autoware_surround_obstacle_checker/include
 )
 
 find_package(autoware_surround_obstacle_checker REQUIRED)

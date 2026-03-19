@@ -7,6 +7,15 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_occlusion_predictor/src
 )
 
+# Create include alias so "autoware_traffic_light_occlusion_predictor/node.hpp" resolves
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/include_alias/autoware_traffic_light_occlusion_predictor)
+file(GLOB TLOP_HEADERS "${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_occlusion_predictor/src/*.hpp")
+foreach(hdr ${TLOP_HEADERS})
+    get_filename_component(hdr_name ${hdr} NAME)
+    file(CREATE_LINK ${hdr} ${CMAKE_BINARY_DIR}/include_alias/autoware_traffic_light_occlusion_predictor/${hdr_name} SYMBOLIC)
+endforeach()
+include_directories(${CMAKE_BINARY_DIR}/include_alias)
+
 find_package(autoware_traffic_light_occlusion_predictor REQUIRED)
 find_package(autoware_lanelet2_extension REQUIRED)
 find_package(autoware_lanelet2_utils REQUIRED)

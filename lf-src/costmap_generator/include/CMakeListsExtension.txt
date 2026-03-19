@@ -24,6 +24,7 @@ find_package(PCL REQUIRED COMPONENTS common io)
 
 include_directories(
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/planning/autoware_costmap_generator/include
+    ${LF_AUTOWARE_HOME}/build/autoware_costmap_generator/include
     ${PCL_INCLUDE_DIRS}
 )
 

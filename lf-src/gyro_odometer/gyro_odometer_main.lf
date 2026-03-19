@@ -4,7 +4,9 @@
  * This node has a timer and subscription callbacks for vehicle twist
  * and IMU data. For now, it runs entirely via ROS in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "gyro_odometer_core.hpp"

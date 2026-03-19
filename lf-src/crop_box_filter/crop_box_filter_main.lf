@@ -4,7 +4,9 @@
  * Subscription-driven node: filters point clouds by a crop box region.
  * Runs passively via ROS callbacks in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/crop_box_filter/crop_box_filter_node.hpp"

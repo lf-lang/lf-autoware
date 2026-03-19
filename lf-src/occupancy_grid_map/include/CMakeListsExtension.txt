@@ -2,10 +2,13 @@ unset(BUILD_TESTING)
 set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
 message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
 
+find_package(CUDAToolkit REQUIRED)
+
 include_directories(
     ${LF_AUTOWARE_HOME}/lf-src/lf-include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_probabilistic_occupancy_grid_map/src/pointcloud_based_occupancy_grid_map
+    ${CUDAToolkit_INCLUDE_DIRS}
 )
 
 find_package(autoware_probabilistic_occupancy_grid_map REQUIRED)

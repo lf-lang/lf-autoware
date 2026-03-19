@@ -5,7 +5,9 @@
  * pose and twist measurements. For now, it runs entirely via ROS
  * in the spin thread.
  */
-target CCpp;
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
 
 preamble {=
     #include "autoware/ekf_localizer/ekf_localizer.hpp"
