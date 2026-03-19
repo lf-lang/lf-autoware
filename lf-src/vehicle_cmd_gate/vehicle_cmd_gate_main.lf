@@ -37,6 +37,14 @@ reactor vehicle_cmd_gate {
             {vehicle_info_path, "/**"}
         });
 
+        // Override check_external_emergency_heartbeat as bool (YAML has
+        // a substitution variable that gets parsed as string)
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("check_external_emergency_heartbeat", false));
+        // Set simulation mode
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("is_simulation", true));
+
         self->node = new autoware::vehicle_cmd_gate::VehicleCmdGate(nodeOptions);
 
         // Cancel the internal ROS2 timers (we use LF timers instead)

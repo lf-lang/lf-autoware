@@ -29,17 +29,43 @@ reactor behavior_path_planner {
 
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
+        std::string common_param_path = home + "/" + PLANNING_COMMON_PARAM;
+        std::string nearest_search_path = home + "/" + PLANNING_NEAREST_SEARCH_PARAM;
         std::string yaml_path = home + "/" + BEHAVIOR_PATH_PLANNER_PARAM;
         std::string drivable_area_path = home + "/" + BEHAVIOR_PATH_PLANNER_DRIVABLE_AREA_PARAM;
         std::string scene_manager_path = home + "/" + BEHAVIOR_PATH_PLANNER_SCENE_MANAGER_PARAM;
+        std::string side_shift_path = home + "/" + BEHAVIOR_PATH_PLANNER_SIDE_SHIFT_PARAM;
+        std::string avoidance_path = home + "/" + BEHAVIOR_PATH_PLANNER_AVOIDANCE_PARAM;
+        std::string avoidance_by_lc_path = home + "/" + BEHAVIOR_PATH_PLANNER_AVOIDANCE_BY_LC_PARAM;
+        std::string dynamic_avoidance_path = home + "/" + BEHAVIOR_PATH_PLANNER_DYNAMIC_AVOIDANCE_PARAM;
+        std::string lane_change_path = home + "/" + BEHAVIOR_PATH_PLANNER_LANE_CHANGE_PARAM;
+        std::string goal_planner_path = home + "/" + BEHAVIOR_PATH_PLANNER_GOAL_PLANNER_PARAM;
+        std::string start_planner_path = home + "/" + BEHAVIOR_PATH_PLANNER_START_PLANNER_PARAM;
+        std::string bidirectional_path = home + "/" + BEHAVIOR_PATH_PLANNER_BIDIRECTIONAL_TRAFFIC_PARAM;
+        std::string sampling_path = home + "/" + BEHAVIOR_PATH_PLANNER_SAMPLING_PARAM;
         std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {common_param_path, "/**"},
+            {nearest_search_path, "/**"},
             {yaml_path, "/**"},
             {drivable_area_path, "/**"},
             {scene_manager_path, "/**"},
+            {side_shift_path, "/**"},
+            {avoidance_path, "/**"},
+            {avoidance_by_lc_path, "/**"},
+            {dynamic_avoidance_path, "/**"},
+            {lane_change_path, "/**"},
+            {goal_planner_path, "/**"},
+            {start_planner_path, "/**"},
+            {bidirectional_path, "/**"},
+            {sampling_path, "/**"},
             {vehicle_info_path, "/**"}
         });
+
+        // Set launch-time parameters
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("launch_modules", std::vector<std::string>{}));
 
         self->node = new autoware::behavior_path_planner::BehaviorPathPlannerNode(nodeOptions);
 

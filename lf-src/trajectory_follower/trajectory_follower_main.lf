@@ -28,17 +28,25 @@ reactor trajectory_follower {
     reaction (startup) {=
         // Load parameters
         std::string home = get_lf_autoware_home();
+        std::string nearest_search_path = home + "/" + CONTROL_NEAREST_SEARCH_PARAM;
         std::string yaml_path = home + "/" + TRAJECTORY_FOLLOWER_PARAM;
         std::string mpc_path = home + "/" + MPC_LATERAL_PARAM;
         std::string pid_path = home + "/" + PID_LONGITUDINAL_PARAM;
         std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {nearest_search_path, "/**"},
             {yaml_path, "/**"},
             {mpc_path, "/**"},
             {pid_path, "/**"},
             {vehicle_info_path, "/**"}
         });
+
+        // Set controller mode parameters (matching launch defaults)
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("lateral_controller_mode", "mpc"));
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("longitudinal_controller_mode", "pid"));
 
         self->node = new autoware::motion::control::trajectory_follower_node::Controller(nodeOptions);
 

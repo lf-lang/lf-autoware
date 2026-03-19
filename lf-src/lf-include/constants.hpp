@@ -28,6 +28,18 @@ const std::string VELOCITY_SMOOTHER_PARAM =
     VELOCITY_SMOOTHER_PARAM_DIR + "/velocity_smoother.param.yaml";
 const std::string VELOCITY_SMOOTHER_ALGORITHM_PARAM =
     VELOCITY_SMOOTHER_PARAM_DIR + "/Analytical.param.yaml";
+const std::string VELOCITY_SMOOTHER_COMMON_PARAM =
+    "src/core/autoware_core/planning/autoware_velocity_smoother/config/default_common.param.yaml";
+
+// Common planning parameters
+const std::string PLANNING_COMMON_PARAM =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/common/common.param.yaml";
+const std::string PLANNING_NEAREST_SEARCH_PARAM =
+    LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/common/nearest_search.param.yaml";
+
+// Control common parameters
+const std::string CONTROL_NEAREST_SEARCH_PARAM =
+    LAUNCHER_CONFIG_PATH + "/control/common/nearest_search.param.yaml";
 
 const std::string BEHAVIOR_PATH_PLANNER_PARAM_DIR =
     LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/lane_driving/behavior_planning/behavior_path_planner";
@@ -37,9 +49,29 @@ const std::string BEHAVIOR_PATH_PLANNER_DRIVABLE_AREA_PARAM =
     BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/drivable_area_expansion.param.yaml";
 const std::string BEHAVIOR_PATH_PLANNER_SCENE_MANAGER_PARAM =
     BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/scene_module_manager.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_SIDE_SHIFT_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/side_shift/side_shift.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_AVOIDANCE_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/autoware_behavior_path_static_obstacle_avoidance_module/static_obstacle_avoidance.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_AVOIDANCE_BY_LC_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/avoidance_by_lane_change/avoidance_by_lane_change.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_DYNAMIC_AVOIDANCE_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/autoware_behavior_path_dynamic_obstacle_avoidance_module/dynamic_obstacle_avoidance.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_LANE_CHANGE_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/lane_change/lane_change.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_GOAL_PLANNER_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/goal_planner/goal_planner.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_START_PLANNER_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/start_planner/start_planner.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_BIDIRECTIONAL_TRAFFIC_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/autoware_behavior_path_bidirectional_traffic_module/bidirectional_traffic.param.yaml";
+const std::string BEHAVIOR_PATH_PLANNER_SAMPLING_PARAM =
+    BEHAVIOR_PATH_PLANNER_PARAM_DIR + "/sampling_planner/sampling_planner.param.yaml";
 
 const std::string MISSION_PLANNER_PARAM =
     LAUNCHER_CONFIG_PATH + "/planning/mission_planning/mission_planner/mission_planner.param.yaml";
+const std::string MISSION_PLANNER_DEFAULT_PARAM =
+    "src/core/autoware_core/planning/autoware_mission_planner/config/mission_planner.param.yaml";
 
 const std::string FREESPACE_PLANNER_PARAM =
     LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/parking/freespace_planner/freespace_planner.param.yaml";

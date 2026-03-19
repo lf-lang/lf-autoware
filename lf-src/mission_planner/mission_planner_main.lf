@@ -27,10 +27,13 @@ reactor mission_planner {
 
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
+        std::string default_param_path = home + "/" + MISSION_PLANNER_DEFAULT_PARAM;
         std::string yaml_path = home + "/" + MISSION_PLANNER_PARAM;
         std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
 
+        // Load default params first, then launcher overrides on top
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {default_param_path, "/**"},
             {yaml_path, "/**"},
             {vehicle_info_path, "/**"}
         });
