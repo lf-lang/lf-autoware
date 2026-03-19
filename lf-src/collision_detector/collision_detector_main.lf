@@ -14,8 +14,10 @@ reactor collision_detector {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
 
-        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            (home + "/" + COLLISION_DETECTOR_PARAM).c_str(), "/**");
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + COLLISION_DETECTOR_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"}
+        });
 
         self->node = std::make_shared<autoware::collision_detector::CollisionDetectorNode>(nodeOptions);
 

@@ -14,8 +14,10 @@ reactor autonomous_emergency_braking {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
 
-        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            (home + "/" + AUTONOMOUS_EMERGENCY_BRAKING_PARAM).c_str(), "/**");
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {home + "/" + AUTONOMOUS_EMERGENCY_BRAKING_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"}
+        });
 
         self->node = std::make_shared<autoware::motion::control::autonomous_emergency_braking::AEB>(nodeOptions);
 

@@ -19,7 +19,8 @@ reactor planning_validator {
             {home + "/" + PLANNING_VALIDATOR_LATENCY_CHECKER_PARAM, "/**"},
             {home + "/" + PLANNING_VALIDATOR_TRAJECTORY_CHECKER_PARAM, "/**"},
             {home + "/" + PLANNING_VALIDATOR_INTERSECTION_COLLISION_CHECKER_PARAM, "/**"},
-            {home + "/" + PLANNING_VALIDATOR_REAR_COLLISION_CHECKER_PARAM, "/**"}
+            {home + "/" + PLANNING_VALIDATOR_REAR_COLLISION_CHECKER_PARAM, "/**"},
+            {home + "/" + VEHICLE_INFO_PARAM, "/**"}
         });
 
         // launch_modules parameter (list of module plugins)
