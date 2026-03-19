@@ -15,6 +15,14 @@ include_directories(
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_shift_decider/include
     ${LF_AUTOWARE_HOME}/build/autoware_shift_decider/include
     ${LF_AUTOWARE_HOME}/build/autoware_costmap_generator/include
+    ${LF_AUTOWARE_HOME}/build/autoware_surround_obstacle_checker/include
+    ${LF_AUTOWARE_HOME}/build/autoware_external_velocity_limit_selector/include
+    ${LF_AUTOWARE_HOME}/build/autoware_path_generator/include
+    ${LF_AUTOWARE_HOME}/build/autoware_motion_velocity_road_user_stop_module/include
+    ${LF_AUTOWARE_HOME}/build/autoware_planning_validator_intersection_collision_checker/include
+    ${LF_AUTOWARE_HOME}/build/autoware_planning_validator_rear_collision_checker/include
+    ${LF_AUTOWARE_HOME}/build/autoware_remaining_distance_time_calculator/include
+    ${LF_AUTOWARE_HOME}/build/autoware_trajectory_ranker/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_trajectory_follower_node/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/include
     ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/control/autoware_vehicle_cmd_gate/src
