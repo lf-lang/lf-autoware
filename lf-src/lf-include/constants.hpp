@@ -75,4 +75,35 @@ const std::string COSTMAP_GENERATOR_PARAM =
     "src/universe/autoware_universe/planning/autoware_costmap_generator/config/"
     "costmap_generator.param.yaml";
 
+// Sensing parameter paths
+const std::string IMU_CORRECTOR_PARAM =
+    "src/universe/autoware_universe/sensing/autoware_imu_corrector/config/"
+    "imu_corrector.param.yaml";
+
+const std::string VEHICLE_VELOCITY_CONVERTER_PARAM =
+    "src/core/autoware_core/sensing/autoware_vehicle_velocity_converter/config/"
+    "vehicle_velocity_converter.param.yaml";
+
+const std::string MIRROR_PARAM =
+    "src/launcher/autoware_launch/sensor_kit/carla_sensor_kit_launch/"
+    "carla_sensor_kit_launch/config/mirror.param.yaml";
+
+// Localization parameter paths
+const std::string NDT_SCAN_MATCHER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/localization/ndt_scan_matcher/ndt_scan_matcher.param.yaml";
+
+const std::string GYRO_ODOMETER_PARAM =
+    "src/core/autoware_core/localization/autoware_gyro_odometer/config/"
+    "gyro_odometer.param.yaml";
+
+const std::string EKF_LOCALIZER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/localization/ekf_localizer.param.yaml";
+
+// Map parameter paths
+const std::string POINTCLOUD_MAP_LOADER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/map/pointcloud_map_loader.param.yaml";
+
+const std::string LANELET2_MAP_LOADER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/map/lanelet2_map_loader.param.yaml";
+
 #endif // LF_AUTOWARE_CONSTANTS_HPP

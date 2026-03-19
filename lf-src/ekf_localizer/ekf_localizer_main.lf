@@ -19,7 +19,11 @@ reactor ekf_localizer {
     state node:{= std::shared_ptr<autoware::ekf_localizer::EKFLocalizer> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + EKF_LOCALIZER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::ekf_localizer::EKFLocalizer>(nodeOptions);

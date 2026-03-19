@@ -18,7 +18,11 @@ reactor imu_corrector {
     state node:{= std::shared_ptr<autoware::imu_corrector::ImuCorrector> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + IMU_CORRECTOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::imu_corrector::ImuCorrector>(nodeOptions);

@@ -18,6 +18,9 @@ reactor crop_box_filter {
     state node:{= std::shared_ptr<autoware::crop_box_filter::CropBoxFilter> =};
 
     reaction (startup) {=
+        // TODO: CropBoxFilter params (min/max x/y/z, negative) are computed
+        // from vehicle_info dimensions. Load from vehicle_info YAML and
+        // compute dynamically rather than hardcoding.
         rclcpp::NodeOptions nodeOptions;
         try { rclcpp::init(0, NULL); } catch (...) { }
 
