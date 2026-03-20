@@ -186,4 +186,37 @@ void* spin_node_with_executor(void* args) {
     return 0;
 }
 
+/**
+ * Replace $(var ...) launch substitutions in a YAML file, write
+ * a resolved temp copy and return its path.
+ */
+inline std::string resolve_yaml_vars(
+    const std::string& yaml_path,
+    const std::vector<std::pair<std::string, std::string>>& replacements)
+{
+    std::ifstream in(yaml_path);
+    if (!in.is_open()) {
+        lf_print_error_and_exit("resolve_yaml_vars: cannot open %s", yaml_path.c_str());
+    }
+    std::ostringstream buf;
+    buf << in.rdbuf();
+    std::string content = buf.str();
+
+    for (const auto& [pattern, value] : replacements) {
+        std::string::size_type pos = 0;
+        while ((pos = content.find(pattern, pos)) != std::string::npos) {
+            content.replace(pos, pattern.size(), value);
+            pos += value.size();
+        }
+    }
+
+    static int counter = 0;
+    std::string tmp_path = "/tmp/lf_resolved_" + std::to_string(getpid()) + "_" +
+                           std::to_string(counter++) + ".yaml";
+    std::ofstream out(tmp_path);
+    out << content;
+    out.close();
+    return tmp_path;
+}
+
 #endif // LF_AUTOWARE_UTILS_HPP

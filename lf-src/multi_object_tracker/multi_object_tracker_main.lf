@@ -29,6 +29,25 @@ reactor multi_object_tracker {
             {ic_path, "/**"}
         });
 
+        // publish_merged_objects is set via launch arg, default false
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("publish_merged_objects", false));
+
+        // Input detection channels: set via launch args.
+        // Channel 01 = lidar_centerpoint, rest = none (disabled).
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("input/detection01/channel", std::string("lidar_centerpoint")));
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("input/detection01/objects",
+                std::string("/perception/object_recognition/detection/centerpoint/objects")));
+        for (int i = 2; i <= 12; i++) {
+            std::string id = std::string("detection") + (i < 10 ? "0" : "") + std::to_string(i);
+            nodeOptions.parameter_overrides().push_back(
+                rclcpp::Parameter("input/" + id + "/channel", std::string("none")));
+            nodeOptions.parameter_overrides().push_back(
+                rclcpp::Parameter("input/" + id + "/objects", std::string("none")));
+        }
+
         self->node = std::make_shared<autoware::multi_object_tracker::MultiObjectTracker>(nodeOptions);
 
         // Start spin thread for subscription callbacks

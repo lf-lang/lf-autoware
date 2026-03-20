@@ -21,6 +21,24 @@
 const std::string LAUNCHER_CONFIG_PATH =
     "src/launcher/autoware_launch/autoware_launch/config";
 
+// Default map directory (resolved from $HOME/autoware_map/Town01)
+inline std::string get_default_map_path() {
+    const char* h = std::getenv("HOME");
+    return std::string(h ? h : "/root") + "/autoware_map/Town01";
+}
+
+// Default data directory (resolved from $HOME/autoware_data)
+inline std::string get_default_data_path() {
+    const char* h = std::getenv("HOME");
+    return std::string(h ? h : "/root") + "/autoware_data";
+}
+
+// Perception: lidar_centerpoint ml_package and class_remapper configs (in data dir)
+const std::string LIDAR_CENTERPOINT_ML_PACKAGE_PARAM =
+    "lidar_centerpoint/centerpoint_tiny_ml_package.param.yaml";
+const std::string LIDAR_CENTERPOINT_CLASS_REMAPPER_PARAM =
+    "lidar_centerpoint/detection_class_remapper.param.yaml";
+
 // Planning parameter paths
 const std::string VELOCITY_SMOOTHER_PARAM_DIR =
     LAUNCHER_CONFIG_PATH + "/planning/scenario_planning/common/autoware_velocity_smoother";
@@ -317,6 +335,9 @@ const std::string MAP_BASED_PREDICTION_PARAM =
 const std::string OCCUPANCY_GRID_MAP_PARAM =
     LAUNCHER_CONFIG_PATH + "/perception/occupancy_grid_map/"
     "pointcloud_based_occupancy_grid_map.param.yaml";
+const std::string OCCUPANCY_GRID_MAP_UPDATER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/occupancy_grid_map/"
+    "binary_bayes_filter_updater.param.yaml";
 
 // Perception: traffic_light_map_based_detector
 const std::string TRAFFIC_LIGHT_MAP_BASED_DETECTOR_PARAM =

@@ -21,6 +21,10 @@ reactor camera_lidar_fusion {
             {common_path, "/**"}
         });
 
+        // rois_number is set via launch arg (number_of_cameras), default 1
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("rois_number", 1));
+
         self->node = std::make_shared<autoware::image_projection_based_fusion::RoiClusterFusionNode>(nodeOptions);
 
         pthread_t spinner_thread;

@@ -20,9 +20,16 @@ reactor occupancy_grid_map {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + OCCUPANCY_GRID_MAP_PARAM;
+        std::string updater_path = home + "/" + OCCUPANCY_GRID_MAP_UPDATER_PARAM;
 
-        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {updater_path, "/**"}
+        });
+
+        // updater_type is set via launch arg, default "binary_bayes_filter"
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("updater_type", std::string("binary_bayes_filter")));
 
         self->node = std::make_shared<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode>(nodeOptions);
 
