@@ -5,14 +5,21 @@ target CCpp {
 preamble {=
     #include "autoware/image_projection_based_fusion/roi_cluster_fusion/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor camera_lidar_fusion {
     state node:{= std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string roi_path = home + "/" + ROI_CLUSTER_FUSION_PARAM;
+        std::string common_path = home + "/" + FUSION_COMMON_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {roi_path, "/**"},
+            {common_path, "/**"}
+        });
 
         self->node = std::make_shared<autoware::image_projection_based_fusion::RoiClusterFusionNode>(nodeOptions);
 

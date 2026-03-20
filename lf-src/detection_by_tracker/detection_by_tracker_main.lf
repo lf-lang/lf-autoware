@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "detection_by_tracker_node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor detection_by_tracker {
     state node:{= std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + DETECTION_BY_TRACKER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::detection_by_tracker::DetectionByTracker>(nodeOptions);
 

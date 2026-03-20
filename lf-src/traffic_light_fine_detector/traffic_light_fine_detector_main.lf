@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "traffic_light_fine_detector_node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor traffic_light_fine_detector {
     state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightFineDetectorNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + TRAFFIC_LIGHT_FINE_DETECTOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::traffic_light::TrafficLightFineDetectorNode>(nodeOptions);
 

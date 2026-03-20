@@ -18,8 +18,16 @@ reactor multi_object_tracker {
     state node:{= std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string tracker_path = home + "/" + MULTI_OBJECT_TRACKER_PARAM;
+        std::string da_path = home + "/" + MULTI_OBJECT_TRACKER_DATA_ASSOCIATION_PARAM;
+        std::string ic_path = home + "/" + MULTI_OBJECT_TRACKER_INPUT_CHANNELS_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {tracker_path, "/**"},
+            {da_path, "/**"},
+            {ic_path, "/**"}
+        });
 
         self->node = std::make_shared<autoware::multi_object_tracker::MultiObjectTracker>(nodeOptions);
 

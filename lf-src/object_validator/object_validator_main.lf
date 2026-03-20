@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "obstacle_pointcloud_validator.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor object_validator {
     state node:{= std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + OBSTACLE_POINTCLOUD_VALIDATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>(nodeOptions);
 

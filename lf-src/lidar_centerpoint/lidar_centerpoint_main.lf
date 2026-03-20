@@ -18,8 +18,14 @@ reactor lidar_centerpoint {
     state node:{= std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + LIDAR_CENTERPOINT_PARAM;
+        std::string common_path = home + "/" + LIDAR_CENTERPOINT_COMMON_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {common_path, "/**"}
+        });
 
         self->node = std::make_shared<autoware::lidar_centerpoint::LidarCenterPointNode>(nodeOptions);
 

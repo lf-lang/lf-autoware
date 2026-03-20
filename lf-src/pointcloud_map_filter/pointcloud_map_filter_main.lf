@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "autoware_compare_map_segmentation/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor pointcloud_map_filter {
     state node:{= std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + COMPARE_MAP_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>(nodeOptions);
 

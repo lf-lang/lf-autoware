@@ -6,14 +6,18 @@ preamble {=
     // Use full path to avoid ambiguity with other node.hpp files
     #include "autoware_traffic_light_occlusion_predictor/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor traffic_light_occlusion_predictor {
     state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightOcclusionPredictorNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + TRAFFIC_LIGHT_OCCLUSION_PREDICTOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::traffic_light::TrafficLightOcclusionPredictorNode>(nodeOptions);
 

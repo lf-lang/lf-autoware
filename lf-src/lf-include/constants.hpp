@@ -248,4 +248,104 @@ const std::string POINTCLOUD_MAP_LOADER_PARAM =
 const std::string LANELET2_MAP_LOADER_PARAM =
     LAUNCHER_CONFIG_PATH + "/map/lanelet2_map_loader.param.yaml";
 
+// Sensing: crop_box_filter
+const std::string CROP_BOX_FILTER_PARAM =
+    "src/core/autoware_core/sensing/autoware_crop_box_filter/config/"
+    "crop_box_filter_node.param.yaml";
+
+// Perception: ground_segmentation (scan_ground_filter)
+const std::string SCAN_GROUND_FILTER_PARAM =
+    "src/universe/autoware_universe/perception/autoware_ground_segmentation/config/"
+    "scan_ground_filter.param.yaml";
+
+// Perception: lidar_centerpoint
+const std::string LIDAR_CENTERPOINT_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/lidar_model/centerpoint.param.yaml";
+const std::string LIDAR_CENTERPOINT_COMMON_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/lidar_model/centerpoint_common.param.yaml";
+
+// Perception: euclidean_cluster
+const std::string EUCLIDEAN_CLUSTER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/clustering/"
+    "voxel_grid_based_euclidean_cluster.param.yaml";
+
+// Perception: pointcloud_map_filter (compare_map)
+const std::string COMPARE_MAP_FILTER_PARAM =
+    "src/universe/autoware_universe/perception/autoware_compare_map_segmentation/config/"
+    "voxel_based_approximate_compare_map_filter.param.yaml";
+
+// Perception: detection_by_tracker
+const std::string DETECTION_BY_TRACKER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/"
+    "detection_by_tracker/detection_by_tracker.param.yaml";
+
+// Perception: object_validator (obstacle_pointcloud_based_validator)
+const std::string OBSTACLE_POINTCLOUD_VALIDATOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/"
+    "detected_object_validation/obstacle_pointcloud_based_validator.param.yaml";
+
+// Perception: object_filter (object_lanelet_filter)
+const std::string OBJECT_LANELET_FILTER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/"
+    "object_filter/object_lanelet_filter.param.yaml";
+
+// Perception: camera_lidar_fusion (roi_cluster_fusion)
+const std::string ROI_CLUSTER_FUSION_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/"
+    "image_projection_based_fusion/roi_cluster_fusion.param.yaml";
+const std::string FUSION_COMMON_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/detection/"
+    "image_projection_based_fusion/fusion_common.param.yaml";
+
+// Perception: multi_object_tracker
+const std::string MULTI_OBJECT_TRACKER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/tracking/"
+    "multi_object_tracker/multi_object_tracker_node.param.yaml";
+const std::string MULTI_OBJECT_TRACKER_DATA_ASSOCIATION_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/tracking/"
+    "multi_object_tracker/data_association_matrix.param.yaml";
+const std::string MULTI_OBJECT_TRACKER_INPUT_CHANNELS_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/tracking/"
+    "multi_object_tracker/input_channels.param.yaml";
+
+// Perception: map_based_prediction
+const std::string MAP_BASED_PREDICTION_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/object_recognition/prediction/"
+    "map_based_prediction.param.yaml";
+
+// Perception: occupancy_grid_map
+const std::string OCCUPANCY_GRID_MAP_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/occupancy_grid_map/"
+    "pointcloud_based_occupancy_grid_map.param.yaml";
+
+// Perception: traffic_light_map_based_detector
+const std::string TRAFFIC_LIGHT_MAP_BASED_DETECTOR_PARAM =
+    "src/universe/autoware_universe/perception/autoware_traffic_light_map_based_detector/config/"
+    "traffic_light_map_based_detector.param.yaml";
+
+// Perception: traffic_light_classifier
+const std::string TRAFFIC_LIGHT_CLASSIFIER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
+    "traffic_light_classifier/car_traffic_light_classifier.param.yaml";
+
+// Perception: traffic_light_arbiter
+const std::string TRAFFIC_LIGHT_ARBITER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
+    "traffic_light_arbiter/traffic_light_arbiter.param.yaml";
+
+// Perception: traffic_light_occlusion_predictor
+const std::string TRAFFIC_LIGHT_OCCLUSION_PREDICTOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
+    "traffic_light_occlusion_predictor/traffic_light_occlusion_predictor.param.yaml";
+
+// Perception: crosswalk_traffic_light_estimator
+const std::string CROSSWALK_TRAFFIC_LIGHT_ESTIMATOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
+    "crosswalk_traffic_light_estimator/crosswalk_traffic_light_estimator.param.yaml";
+
+// Perception: traffic_light_fine_detector
+const std::string TRAFFIC_LIGHT_FINE_DETECTOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
+    "traffic_light_fine_detector/traffic_light_fine_detector.param.yaml";
+
 #endif // LF_AUTOWARE_CONSTANTS_HPP
