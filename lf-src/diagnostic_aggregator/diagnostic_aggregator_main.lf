@@ -1,0 +1,51 @@
+/**
+ * LF reactor wrapping the Autoware Universe DiagnosticGraphAggregator.
+ *
+ * Timer-driven node: aggregates diagnostic messages from all nodes
+ * into a diagnostic graph and publishes system health status.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "node/aggregator.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor diagnostic_aggregator {
+    state node:{= std::shared_ptr<autoware::diagnostic_graph_aggregator::AggregatorNode> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string param_path = home + "/" + DIAGNOSTIC_AGGREGATOR_PARAM;
+        std::string graph_path = home + "/" + DIAGNOSTIC_AGGREGATOR_GRAPH_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            param_path.c_str(), "/**");
+
+        // Set the graph file path
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("graph_file", graph_path));
+
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<
+            autoware::diagnostic_graph_aggregator::AggregatorNode>(nodeOptions);
+
+        // Start spin thread for subscription and timer callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<
+                autoware::diagnostic_graph_aggregator::AggregatorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<
+                    autoware::diagnostic_graph_aggregator::AggregatorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    da = new diagnostic_aggregator();
+}

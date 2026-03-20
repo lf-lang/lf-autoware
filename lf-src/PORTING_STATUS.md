@@ -3,29 +3,34 @@
 Status of porting Autoware ROS 2 nodes to Lingua Franca (LF) reactors.
 Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 
-## Ported to LF (46 nodes)
+## Ported to LF (59 nodes)
 
-### Sensing (3)
+### Sensing (4)
 | Node | Description |
 |------|-------------|
 | `crop_box_filter` | Filters ego vehicle body from pointcloud |
+| `crop_box_filter_mirror` | Filters mirrors from pointcloud |
 | `imu_corrector` | Processes raw IMU data |
 | `vehicle_velocity_converter` | Converts velocity status to twist |
 
-### Localization (3)
+### Localization (6)
 | Node | Description |
 |------|-------------|
 | `ndt_scan_matcher` | NDT-based pose estimation |
+| `pointcloud_downsampling` | Voxel grid downsample for NDT input |
 | `gyro_odometer` | Twist estimation from IMU/gyro |
 | `ekf_localizer` | EKF fusion of pose + twist |
+| `pose_initializer` | Initial pose setup via service |
+| `automatic_pose_initializer` | Auto-init from GNSS |
 
-### Map (2)
+### Map (3)
 | Node | Description |
 |------|-------------|
 | `pointcloud_map_loader` | Loads PCD pointcloud map |
 | `lanelet2_map_loader` | Loads lanelet2 OSM map |
+| `map_projection_loader` | Loads map projection info |
 
-### Perception (16)
+### Perception (17)
 | Node | Description |
 |------|-------------|
 | `ground_segmentation` | Separates ground from obstacle points |
@@ -40,6 +45,7 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 | `map_based_prediction` | Predicts object trajectories using map |
 | `occupancy_grid_map` | Occupancy grid representation |
 | `traffic_light_map_based_detector` | Detects relevant traffic lights from map |
+| `traffic_light_fine_detector` | Refines traffic light detection (CUDA) |
 | `traffic_light_classifier` | Classifies traffic light state |
 | `traffic_light_arbiter` | Arbitrates multiple traffic light sources |
 | `traffic_light_occlusion_predictor` | Predicts traffic light occlusion |
@@ -79,7 +85,22 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 |------|-------------|
 | `bridge_interface` | Publishes control commands to ROS for CARLA |
 
-## Not Ported (8 nodes)
+### Vehicle (2)
+| Node | Description |
+|------|-------------|
+| `robot_state_publisher` | Publishes TF transforms from URDF |
+| `image_transport_relay` | Relays camera info/image topics |
+
+### System (5)
+| Node | Description |
+|------|-------------|
+| `mrm_handler` | Monitors state, triggers MRM behaviors |
+| `mrm_emergency_stop_operator` | Generates emergency stop control commands |
+| `diagnostic_aggregator` | Aggregates diagnostics into graph |
+| `system_monitor` | CPU/memory/net/GPU/HDD/NTP/process/voltage monitors |
+| `default_adapi` | AD API nodes (state, motion, routing, etc.) |
+
+## Not Ported (2 nodes)
 
 ### CARLA Interface (2)
 | Node | Description | Reason |
@@ -87,40 +108,13 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 | `autoware_carla_interface` | Connects to CARLA, publishes sensor data | Future: replace with LF reactor using CARLA Python API |
 | `raw_vehicle_cmd_converter` | Converts control commands to CARLA actuator format | Same as above |
 
-### Sensing (1)
-| Node | Description | Reason |
-|------|-------------|--------|
-| `crop_box_filter_mirror` | Filters mirrors from pointcloud | Only self-filter variant ported |
-
-### Map (1)
-| Node | Description | Reason |
-|------|-------------|--------|
-| `map_projection_loader` | Loads map projection info | Not yet ported |
-
-### Localization (3)
-| Node | Description | Reason |
-|------|-------------|--------|
-| `pointcloud_downsampling` | Voxel grid downsample for NDT input | Not yet ported |
-| `pose_initializer` | Initial pose setup | Not yet ported |
-| `automatic_pose_initializer` | Auto-init from GNSS | Not yet ported |
-
-### Perception (1)
-| Node | Description | Reason |
-|------|-------------|--------|
-| `traffic_light_fine_detector` | Refines traffic light detection | Not yet ported |
-
 ## Out of Scope (stay as ROS 2 or omit)
 
 | Node(s) | Reason |
 |---------|--------|
-| `rviz2` | Visualization/debug tool |
-| `robot_state_publisher` | TF from URDF — infrastructure |
-| image_transport relay/republish | Utilities |
-| `diagnostic_aggregator`, `system_monitor` | System monitoring |
-| `mrm_handler`, `mrm_emergency_stop_operator` | Minimal Risk Maneuver |
-| Map visualization, map hash generator | Visualization/infra |
-| Evaluator/analytics nodes | Analytics |
-| API nodes | External interfaces |
+| `rviz2` | Visualization/debug tool — standalone GUI |
+| Map visualization, map hash generator | Visualization helpers — not in driving loop |
+| Evaluator/analytics nodes | Offline analysis — not in driving loop |
 
 ## Architecture
 
@@ -128,11 +122,12 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 - **Decentralized coordination:** no central RTI
 - **ROS 2 serialization:** inter-node communication via ROS topics
 - **Federation definition:** `lf-src/AutowareFederated.lf`
+- **Multi-node reactors:** `system_monitor` (8 monitors), `default_adapi` (15 API nodes) run multiple ROS nodes in a single federate via MultiThreadedExecutor
 
 ## Testing
 
 ```bash
-# Full stack (all 46 LF nodes)
+# Full stack (all LF nodes)
 bash lf-src/test_lf_full_stack.sh
 
 # Hybrid (LF planning+control, ROS sensing/localization/perception)

@@ -1,0 +1,63 @@
+/**
+ * LF reactor wrapping the standard ROS 2 robot_state_publisher.
+ *
+ * Startup-driven node: processes URDF via xacro and publishes TF
+ * transforms for the vehicle model. Runs passively after startup.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "robot_state_publisher/robot_state_publisher.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+    #include <cstdio>
+    #include <array>
+=}
+
+reactor robot_state_publisher {
+    state node:{= std::shared_ptr<robot_state_publisher::RobotStatePublisher> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string xacro_path = home + "/" + VEHICLE_XACRO_PATH;
+
+        // Run xacro to generate URDF string
+        std::string cmd = "xacro " + xacro_path;
+        std::array<char, 4096> buffer;
+        std::string urdf;
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (pipe) {
+            while (fgets(buffer.data(), buffer.size(), pipe) != nullptr) {
+                urdf += buffer.data();
+            }
+            pclose(pipe);
+        }
+
+        if (urdf.empty()) {
+            lf_print_warning("Failed to generate URDF from xacro: %s", xacro_path.c_str());
+            return;
+        }
+
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        rclcpp::NodeOptions nodeOptions;
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("robot_description", urdf));
+
+        self->node = std::make_shared<robot_state_publisher::RobotStatePublisher>(nodeOptions);
+
+        // Start spin thread for subscription callbacks (joint_states -> TF)
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<robot_state_publisher::RobotStatePublisher>>,
+            static_cast<void*>(
+                new std::shared_ptr<robot_state_publisher::RobotStatePublisher>(self->node)));
+    =}
+}
+
+main reactor {
+    rsp = new robot_state_publisher();
+}

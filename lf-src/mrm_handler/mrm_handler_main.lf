@@ -1,0 +1,55 @@
+/**
+ * LF reactor wrapping the Autoware Universe MrmHandler.
+ *
+ * Timer-driven node: monitors system state and triggers Minimal Risk
+ * Maneuver (MRM) behaviors (pull over, comfortable stop, emergency stop)
+ * when failures are detected.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/mrm_handler/mrm_handler_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor mrm_handler {
+    state node:autoware::mrm_handler::MrmHandler*;
+    state node_shared_ptr:std::shared_ptr<autoware::mrm_handler::MrmHandler>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MRM_HANDLER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::mrm_handler::MrmHandler(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<autoware::mrm_handler::MrmHandler>(self->node);
+
+        // Start spin thread for subscription and service callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node_with_executor<std::shared_ptr<autoware::mrm_handler::MrmHandler>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::mrm_handler::MrmHandler>(
+                    self->node_shared_ptr)));
+    =}
+
+    // Timer at 100ms (10Hz) matching the node's default update_rate
+    timer t(0, 100 msec);
+    reaction (t) {=
+        self->node->onTimer();
+    =}
+}
+
+main reactor {
+    mrm = new mrm_handler();
+}

@@ -1,0 +1,54 @@
+/**
+ * LF reactor wrapping the Autoware Universe AutomaticPoseInitializer.
+ *
+ * Timer-driven node: periodically checks localization state and
+ * automatically triggers pose initialization from GNSS when needed.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "automatic_pose_initializer.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor automatic_pose_initializer {
+    state node:autoware::automatic_pose_initializer::AutomaticPoseInitializer*;
+    state node_shared_ptr:std::shared_ptr<autoware::automatic_pose_initializer::AutomaticPoseInitializer>;
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = new autoware::automatic_pose_initializer::AutomaticPoseInitializer(nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<
+            autoware::automatic_pose_initializer::AutomaticPoseInitializer>(self->node);
+
+        // Start spin thread for subscription and service callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node_with_executor<std::shared_ptr<
+                autoware::automatic_pose_initializer::AutomaticPoseInitializer>>,
+            static_cast<void*>(
+                new std::shared_ptr<
+                    autoware::automatic_pose_initializer::AutomaticPoseInitializer>(
+                        self->node_shared_ptr)));
+    =}
+
+    // Timer at 1000ms (1Hz) matching the node's default rate
+    timer t(0, 1000 msec);
+    reaction (t) {=
+        self->node->on_timer();
+    =}
+}
+
+main reactor {
+    api = new automatic_pose_initializer();
+}

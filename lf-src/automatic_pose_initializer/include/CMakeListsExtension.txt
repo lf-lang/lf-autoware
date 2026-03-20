@@ -1,0 +1,22 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/system/autoware_default_adapi_helpers/autoware_automatic_pose_initializer/src
+)
+
+find_package(autoware_automatic_pose_initializer REQUIRED)
+find_package(autoware_adapi_specs REQUIRED)
+find_package(autoware_component_interface_utils REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_automatic_pose_initializer
+    autoware_adapi_specs
+    autoware_component_interface_utils
+    rclcpp
+    rclcpp_components
+)

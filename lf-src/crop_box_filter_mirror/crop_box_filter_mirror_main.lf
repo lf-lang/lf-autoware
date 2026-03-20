@@ -1,0 +1,46 @@
+/**
+ * LF reactor wrapping the Autoware Core CropBoxFilter (mirror variant).
+ *
+ * Subscription-driven node: filters mirror points from point clouds.
+ * Same class as crop_box_filter but with mirror-specific parameters.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/crop_box_filter/crop_box_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor crop_box_filter_mirror {
+    state node:{= std::shared_ptr<autoware::crop_box_filter::CropBoxFilter> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string crop_box_path = home + "/" + CROP_BOX_FILTER_PARAM;
+        std::string mirror_path = home + "/" + MIRROR_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {crop_box_path, "/**"},
+            {mirror_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
+
+        self->node = std::make_shared<autoware::crop_box_filter::CropBoxFilter>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>(self->node)));
+    =}
+}
+
+main reactor {
+    cbfm = new crop_box_filter_mirror();
+}

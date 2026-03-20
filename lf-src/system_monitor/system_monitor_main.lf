@@ -1,0 +1,86 @@
+/**
+ * LF reactor wrapping the Autoware Universe SystemMonitor nodes.
+ *
+ * Subscription-driven container: creates all system monitor components
+ * (CPU, Memory, Network, NTP, Process, HDD, GPU, Voltage) and spins
+ * them in a background thread. Each publishes diagnostics independently.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "system_monitor/cpu_monitor/cpu_monitor_base.hpp"
+    #include "system_monitor/mem_monitor/mem_monitor.hpp"
+    #include "system_monitor/net_monitor/net_monitor.hpp"
+    #include "system_monitor/ntp_monitor/ntp_monitor.hpp"
+    #include "system_monitor/process_monitor/process_monitor.hpp"
+    #include "system_monitor/hdd_monitor/hdd_monitor.hpp"
+    #include "system_monitor/voltage_monitor/voltage_monitor.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+
+    // Forward declare the platform-specific GPU monitor
+    #if defined(_GPU_NVML_)
+    #include "system_monitor/gpu_monitor/nvml_gpu_monitor.hpp"
+    #elif defined(_CPU_TEGRA_)
+    #include "system_monitor/gpu_monitor/tegra_gpu_monitor.hpp"
+    #else
+    #include "system_monitor/gpu_monitor/unknown_gpu_monitor.hpp"
+    #endif
+=}
+
+reactor system_monitor {
+    state executor:{= std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+
+        // Create each monitor node with its parameter file
+        auto create_opts = [&](const std::string& param) {
+            std::string path = home + "/" + param;
+            return get_node_options_from_yaml(path.c_str(), "/**");
+        };
+
+        auto cpu = std::make_shared<CPUMonitorBase>("cpu_monitor", create_opts(SYSTEM_MONITOR_CPU_PARAM));
+        auto mem = std::make_shared<MemMonitor>(create_opts(SYSTEM_MONITOR_MEM_PARAM));
+        auto net = std::make_shared<NetMonitor>(create_opts(SYSTEM_MONITOR_NET_PARAM));
+        auto ntp = std::make_shared<NTPMonitor>(create_opts(SYSTEM_MONITOR_NTP_PARAM));
+        auto proc = std::make_shared<ProcessMonitor>(create_opts(SYSTEM_MONITOR_PROCESS_PARAM));
+        auto hdd = std::make_shared<HddMonitor>(create_opts(SYSTEM_MONITOR_HDD_PARAM));
+        auto volt = std::make_shared<VoltageMonitor>(create_opts(SYSTEM_MONITOR_VOLTAGE_PARAM));
+        auto gpu = std::make_shared<GPUMonitor>(create_opts(SYSTEM_MONITOR_GPU_PARAM));
+
+        self->executor->add_node(cpu);
+        self->executor->add_node(mem);
+        self->executor->add_node(net);
+        self->executor->add_node(ntp);
+        self->executor->add_node(proc);
+        self->executor->add_node(hdd);
+        self->executor->add_node(volt);
+        self->executor->add_node(gpu);
+
+        // Spin all nodes in a background thread
+        auto exec = self->executor;
+        pthread_t spinner_thread;
+        pthread_create(&spinner_thread, NULL, [](void* arg) -> void* {
+            auto executor = *static_cast<std::shared_ptr<
+                rclcpp::executors::MultiThreadedExecutor>*>(arg);
+            while (rclcpp::ok()) {
+                executor->spin_some(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            delete static_cast<std::shared_ptr<
+                rclcpp::executors::MultiThreadedExecutor>*>(arg);
+            return nullptr;
+        }, static_cast<void*>(new std::shared_ptr<
+            rclcpp::executors::MultiThreadedExecutor>(exec)));
+    =}
+}
+
+main reactor {
+    sm = new system_monitor();
+}

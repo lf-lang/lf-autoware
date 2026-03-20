@@ -369,4 +369,63 @@ const std::string TRAFFIC_LIGHT_FINE_DETECTOR_PARAM =
     LAUNCHER_CONFIG_PATH + "/perception/traffic_light_recognition/"
     "traffic_light_fine_detector/traffic_light_fine_detector.param.yaml";
 
+// Map: map_projection_loader
+const std::string MAP_PROJECTION_LOADER_PARAM =
+    "src/core/autoware_core/map/autoware_map_projection_loader/config/"
+    "map_projection_loader.param.yaml";
+
+// Localization: pointcloud_downsampling (voxel grid filter)
+const std::string POINTCLOUD_DOWNSAMPLING_PARAM =
+    LAUNCHER_CONFIG_PATH + "/localization/ndt_scan_matcher/pointcloud_preprocessor/"
+    "voxel_grid_filter.param.yaml";
+
+// Localization: pose_initializer
+const std::string POSE_INITIALIZER_PARAM =
+    "src/core/autoware_core/localization/autoware_pose_initializer/config/"
+    "pose_initializer.param.yaml";
+
+// System: MRM handler
+const std::string MRM_HANDLER_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/mrm_handler/mrm_handler.param.yaml";
+
+// System: MRM emergency stop operator
+const std::string MRM_EMERGENCY_STOP_OPERATOR_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/mrm_emergency_stop_operator/"
+    "mrm_emergency_stop_operator.param.yaml";
+
+// System: diagnostic_aggregator
+const std::string DIAGNOSTIC_AGGREGATOR_PARAM =
+    "src/universe/autoware_universe/system/autoware_diagnostic_graph_aggregator/config/"
+    "default.param.yaml";
+const std::string DIAGNOSTIC_AGGREGATOR_GRAPH_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/diagnostics/autoware-main.yaml";
+
+// System: system_monitor
+const std::string SYSTEM_MONITOR_CPU_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/cpu_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_GPU_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/gpu_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_HDD_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/hdd_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_MEM_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/mem_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_NET_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/net_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_NTP_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/ntp_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_PROCESS_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/process_monitor.param.yaml";
+const std::string SYSTEM_MONITOR_VOLTAGE_PARAM =
+    LAUNCHER_CONFIG_PATH + "/system/system_monitor/voltage_monitor.param.yaml";
+
+// System: default ADAPI
+const std::string DEFAULT_ADAPI_PARAM =
+    "src/universe/autoware_universe/system/autoware_default_adapi_universe/config/"
+    "default_adapi.param.yaml";
+
+// Vehicle: robot_state_publisher URDF xacro path
+const std::string VEHICLE_XACRO_PATH =
+    "src/launcher/autoware_launch/vehicle/awsim_labs_vehicle_launch/"
+    "awsim_labs_vehicle_description/urdf/vehicle.xacro";
+
 #endif // LF_AUTOWARE_CONSTANTS_HPP
