@@ -1,0 +1,13 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(rclcpp REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    rclcpp
+)

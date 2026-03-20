@@ -87,6 +87,9 @@ import diagnostic_aggregator from "diagnostic_aggregator/diagnostic_aggregator_m
 import system_monitor from "system_monitor/system_monitor_main.lf";
 import default_adapi from "default_adapi/default_adapi_main.lf";
 
+// CARLA Interface (CCpp stub — real implementation is Python, built separately)
+import carla_interface from "carla_interface/carla_interface_main.lf";
+
 federated reactor AutowareFederated {
     // Sensing
     cbf = new crop_box_filter();
@@ -164,6 +167,9 @@ federated reactor AutowareFederated {
     da = new diagnostic_aggregator();
     sm = new system_monitor();
     adapi = new default_adapi();
+
+    // CARLA Interface (CCpp stub — swap with Python federate at runtime)
+    ci = new carla_interface();
 
     // LF connections: Control -> BridgeInterface
     vcg.control_cmd ~> bridge.control_cmd_in serializer "ros2";

@@ -1,0 +1,45 @@
+/**
+ * CCpp stub for the CARLA interface federate.
+ *
+ * This is a placeholder used by the federation code generator (lfc).
+ * At build time, this federate is swapped out for the Python implementation
+ * (CarlaInterface.lf) which uses the CARLA Python API.
+ *
+ * The stub has no ports because all data flows via ROS topics — CARLA publishes
+ * sensor data and subscribes to control commands through ROS, not LF connections.
+ *
+ * See: carla_interface/build_carla_federate.sh for the swap procedure.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "utils.hpp"
+    #include "constants.hpp"
+    #include <thread>
+    #include <chrono>
+=}
+
+reactor carla_interface {
+    /**
+     * Timer-driven loop. In the real Python implementation, each tick
+     * corresponds to one world.tick() call in CARLA.
+     * This stub just sleeps — it exists only so lfc can generate the
+     * federation scaffold. The real federate binary is built separately.
+     */
+    timer t(0, 50 msec);
+    reaction (startup) {=
+        lf_print("WARNING: This is the CCpp stub for carla_interface.");
+        lf_print("Use the Python CarlaInterface.lf federate instead.");
+        lf_print("See lf-src/carla_interface/README.md for instructions.");
+    =}
+
+    reaction (t) {=
+        // No-op in stub. Real implementation calls world.tick().
+    =}
+}
+
+main reactor {
+    ci = new carla_interface();
+}

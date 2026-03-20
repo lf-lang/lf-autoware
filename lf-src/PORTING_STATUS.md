@@ -3,7 +3,7 @@
 Status of porting Autoware ROS 2 nodes to Lingua Franca (LF) reactors.
 Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 
-## Ported to LF (59 nodes)
+## Ported to LF (60 federates)
 
 ### Sensing (4)
 | Node | Description |
@@ -100,13 +100,10 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 | `system_monitor` | CPU/memory/net/GPU/HDD/NTP/process/voltage monitors |
 | `default_adapi` | AD API nodes (state, motion, routing, etc.) |
 
-## Not Ported (2 nodes)
-
-### CARLA Interface (2)
-| Node | Description | Reason |
-|------|-------------|--------|
-| `autoware_carla_interface` | Connects to CARLA, publishes sensor data | Future: replace with LF reactor using CARLA Python API |
-| `raw_vehicle_cmd_converter` | Converts control commands to CARLA actuator format | Same as above |
+### CARLA Interface (1 federate, replaces 2 ROS nodes)
+| Node | Description |
+|------|-------------|
+| `carla_interface` | Synchronous CARLA bridge — LF logical time drives `world.tick()`. Replaces both `autoware_carla_interface` and `raw_vehicle_cmd_converter`. Uses Python target (built separately, swapped in at runtime). |
 
 ## Out of Scope (stay as ROS 2 or omit)
 
@@ -123,12 +120,20 @@ Each LF reactor runs as a standalone federate in `AutowareFederated.lf`.
 - **ROS 2 serialization:** inter-node communication via ROS topics
 - **Federation definition:** `lf-src/AutowareFederated.lf`
 - **Multi-node reactors:** `system_monitor` (8 monitors), `default_adapi` (15 API nodes) run multiple ROS nodes in a single federate via MultiThreadedExecutor
+- **Mixed-target federation:** `carla_interface` uses Python target (CARLA Python API), all others use CCpp. Both use the C runtime, so the wire protocol is compatible. The Python federate is compiled separately and joins the federation at runtime.
 
 ## Testing
 
 ```bash
-# Full stack (all LF nodes)
+# Full stack (all LF nodes + CARLA)
+# Terminal 1: CARLA simulator
+cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=Low
+
+# Terminal 2: CCpp federates
 bash lf-src/test_lf_full_stack.sh
+
+# Terminal 3: Python CARLA federate
+bash lf-src/carla_interface/run_carla_federate.sh
 
 # Hybrid (LF planning+control, ROS sensing/localization/perception)
 bash test_phase1_carla_no_planning.sh   # ROS nodes + RViz
