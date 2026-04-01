@@ -17,11 +17,11 @@ target Python {
     compile-definitions: {
         FEDERATED_DECENTRALIZED: "",
         EXECUTABLE_PREAMBLE: "",
-        NUMBER_OF_FEDERATES: "47",
-        FEDERATE_ID: "46",
+        NUMBER_OF_FEDERATES: "72",
+        FEDERATE_ID: "71",
         FEDERATED: "",
         LF_CLOCK_SYNC: "1",
-        _LF_FEDERATE_NAMES_COMMA_SEPARATED: "\"federate__cbf,federate__imu,federate__vvc,federate__ndt,federate__gyro,federate__ekf,federate__pcm,federate__l2m,federate__gs,federate__lcp,federate__ec,federate__pmf,federate__dbt,federate__ov,federate__of,federate__clf,federate__mot,federate__mbp,federate__ogm,federate__tlmbd,federate__tlc,federate__tla,federate__tlop,federate__ctle,federate__mp,federate__bpp,federate__bvp,federate__ps,federate__po,federate__mvp,federate__soc,federate__ss,federate__vs,federate__fp,federate__cg,federate__pv,federate__evls,federate__tf,federate__sd,federate__vcg,federate__omtm,federate__ldc,federate__cv,federate__aeb,federate__cd,federate__bridge,federate__ci\""
+        _LF_FEDERATE_NAMES_COMMA_SEPARATED: "\"federate__cbf,federate__imu,federate__vvc,federate__rdf,federate__ptf,federate__vgof,federate__adf,federate__idec,federate__ndt,federate__gyro,federate__ekf,federate__lem,federate__pid,federate__sf,federate__pcm,federate__l2m,federate__gs,federate__lcp,federate__ec,federate__pmf,federate__dbt,federate__ov,federate__of,federate__clf,federate__mot,federate__mbp,federate__ogm,federate__tlmbd,federate__tlc,federate__tla,federate__tlop,federate__ctle,federate__yolox,federate__tls,federate__tlcm,federate__som,federate__ors,federate__ogmof,federate__mp,federate__bpp,federate__bvp,federate__ps,federate__po,federate__mvp,federate__soc,federate__ss,federate__vs,federate__fp,federate__cg,federate__pv,federate__evls,federate__pg,federate__psa,federate__tf,federate__sd,federate__vcg,federate__omtm,federate__ldc,federate__cv,federate__aeb,federate__cd,federate__occ,federate__ppc,federate__ecs,federate__bridge,federate__mcso,federate__hsc,federate__dnc,federate__ptc,federate__plm,federate__csm,federate__ci\""
     },
     keepalive: true,
     files: ["carla_bridge.py"]
