@@ -8,10 +8,10 @@ target CCpp {
 };
 
 preamble {=
+    #include <rclcpp/rclcpp.hpp>
+    #include <class_loader/class_loader.hpp>
     #include "utils.hpp"
     #include "constants.hpp"
-    // Node class is defined inline in cpp — link to the built library
-    namespace autoware::map_tf_generator { class VectorMapTFGeneratorNode; }
 =}
 
 reactor map_tf_generator {
@@ -24,16 +24,15 @@ reactor map_tf_generator {
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
             yaml_path.c_str(), "/**");
 
-        // Use the component factory to create the node
-        auto factory = rclcpp_components::NodeFactory::make_shared(
-            "autoware::map_tf_generator::VectorMapTFGeneratorNode");
-        auto wrapper = factory->create_node_instance(nodeOptions);
-        self->node = wrapper.get_node_base_interface()->get_node_base_interface()
-            ? std::dynamic_pointer_cast<rclcpp::Node>(wrapper.get_node_instance())
-            : nullptr;
-
-        if (!self->node) {
-            // Fallback: just let the component loader handle it
+        // Load the node via class_loader since the class is defined in the .so
+        std::string lib_path = std::string(home) +
+            "/install/autoware_map_tf_generator/lib/libautoware_map_tf_generator.so";
+        auto loader = std::make_shared<class_loader::ClassLoader>(lib_path);
+        auto classes = loader->getAvailableClasses<rclcpp::Node>();
+        if (!classes.empty()) {
+            self->node = loader->createSharedInstance<rclcpp::Node>(classes[0]);
+        } else {
+            lf_print_warning("map_tf_generator: no classes found in .so, using plain node");
             self->node = std::make_shared<rclcpp::Node>("map_tf_generator", nodeOptions);
         }
 

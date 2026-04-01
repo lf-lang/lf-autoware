@@ -45,6 +45,22 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
 
 find_library(LIB_OGM_OUTLIER_FILTER autoware_occupancy_grid_map_outlier_filter
     PATHS ${autoware_occupancy_grid_map_outlier_filter_DIR}/../../../lib NO_DEFAULT_PATH)
-if(LIB_OGM_OUTLIER_FILTER)
-    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_OGM_OUTLIER_FILTER})
-endif()
+find_library(LIB_PP_FILTER_BASE pointcloud_preprocessor_filter_base
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CONCATENATE_DATA concatenate_data
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+
+# Fix transitive dependency issues (PCL -> gdal -> netcdf -> curl)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(CURL REQUIRED)
+
+# Link with --whole-archive to resolve all symbols from filter_base
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC
+    ${LIB_OGM_OUTLIER_FILTER}
+    -Wl,--no-as-needed
+    ${LIB_PP_FILTER_BASE}
+    ${LIB_CONCATENATE_DATA}
+    ${LIB_PP_FILTER_BASE}
+    -Wl,--as-needed
+    ${PCL_LIBRARIES}
+    CURL::libcurl ncurses)
