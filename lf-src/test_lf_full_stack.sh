@@ -33,21 +33,25 @@ echo "=== Starting FULL LF Autoware Stack ==="
 i=0
 
 # Map
-for node in pointcloud_map_loader lanelet2_map_loader; do
+for node in pointcloud_map_loader lanelet2_map_loader map_tf_generator; do
     echo "  [map] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
 done
 
 # Sensing
-for node in crop_box_filter imu_corrector vehicle_velocity_converter; do
+for node in crop_box_filter imu_corrector vehicle_velocity_converter \
+            random_downsample_filter passthrough_filter \
+            voxel_grid_outlier_filter approximate_downsample_filter \
+            pointcloud_concatenator image_decompressor; do
     echo "  [sensing] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
 done
 
 # Localization
-for node in ndt_scan_matcher gyro_odometer ekf_localizer; do
+for node in ndt_scan_matcher gyro_odometer ekf_localizer \
+            localization_error_monitor pose_instability_detector stop_filter; do
     echo "  [localization] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
@@ -60,7 +64,10 @@ for node in ground_segmentation lidar_centerpoint euclidean_cluster \
             map_based_prediction occupancy_grid_map \
             traffic_light_map_based_detector traffic_light_classifier \
             traffic_light_arbiter traffic_light_occlusion_predictor \
-            crosswalk_traffic_light_estimator; do
+            crosswalk_traffic_light_estimator tensorrt_yolox \
+            traffic_light_selector traffic_light_category_merger \
+            simple_object_merger object_range_splitter \
+            occupancy_grid_map_outlier_filter; do
     echo "  [perception] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
@@ -71,7 +78,8 @@ for node in mission_planner behavior_path_planner behavior_velocity_planner \
             path_smoother path_optimizer motion_velocity_planner \
             surround_obstacle_checker scenario_selector velocity_smoother \
             costmap_generator freespace_planner \
-            planning_validator external_velocity_limit_selector; do
+            planning_validator external_velocity_limit_selector \
+            path_generator path_sampler; do
     echo "  [planning] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
@@ -80,7 +88,9 @@ done
 # Control
 for node in trajectory_follower shift_decider vehicle_cmd_gate \
             operation_mode_transition_manager lane_departure_checker \
-            control_validator autonomous_emergency_braking collision_detector; do
+            control_validator autonomous_emergency_braking collision_detector \
+            obstacle_collision_checker predicted_path_checker \
+            external_cmd_selector; do
     echo "  [control] $node"
     "$BIN/${node}_main" &
     pids[$i]=$!; i=$((i+1))
@@ -89,10 +99,19 @@ done
 # Bridge
 echo "  [bridge] bridge_interface"
 "$BIN/bridge_interface_main" &
-pids[$i]=$!
+pids[$i]=$!; i=$((i+1))
+
+# System
+for node in mrm_comfortable_stop_operator hazard_status_converter \
+            duplicated_node_checker processing_time_checker \
+            pipeline_latency_monitor component_state_monitor; do
+    echo "  [system] $node"
+    "$BIN/${node}_main" &
+    pids[$i]=$!; i=$((i+1))
+done
 
 echo ""
-echo "=== All $((i+1)) LF nodes started ==="
+echo "=== All $i LF nodes started ==="
 echo "Press Ctrl-C to stop."
 echo ""
 

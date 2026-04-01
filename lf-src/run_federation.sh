@@ -26,16 +26,22 @@ BIN_DIR="$LF_AUTOWARE_HOME/fed-gen/AutowareFederated/bin"
 CARLA_FED_DIR="$LF_AUTOWARE_HOME/src-gen/lf-src/carla_interface/federate__ci"
 
 echo "#### Launching RTI"
-"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 47 &
+"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 74 &
 RTI=$!
 sleep 2
 
 i=0
 
-# 46 CCpp federates (IDs 0-45)
-for fed in cbf imu vvc ndt gyro ekf pcm l2m gs lcp ec pmf dbt ov of clf \
-           mot mbp ogm tlmbd tlc tla tlop ctle mp bpp bvp ps po mvp soc \
-           ss vs fp cg pv evls tf sd vcg omtm ldc cv aeb cd bridge; do
+# 73 CCpp federates (IDs 0-72)
+for fed in cbf imu vvc rdf ptf vgof adf pc idec \
+           ndt gyro ekf lem pid sf \
+           pcm l2m mtg \
+           gs lcp ec pmf dbt ov of clf mot mbp ogm tlmbd tlc tla tlop ctle \
+           yolox tls tlcm som ors ogmof \
+           mp bpp bvp ps po mvp soc ss vs fp cg pv evls pg psa \
+           tf sd vcg omtm ldc cv aeb cd occ ppc ecs \
+           bridge \
+           mcso hsc dnc ptc plm csm; do
     echo "#### Launching federate__${fed}"
     "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
     pids[$i]=$!
@@ -43,12 +49,12 @@ for fed in cbf imu vvc ndt gyro ekf pcm l2m gs lcp ec pmf dbt ov of clf \
     sleep 0.1  # Stagger launches to avoid RTI accept() overload
 done
 
-# Python CARLA federate (ID 46)
+# Python CARLA federate (ID 73)
 echo "#### Launching federate__ci (Python CARLA interface)"
 (cd "$CARLA_FED_DIR" && python3 -m federate__ci -i $FEDERATION_ID) &
 pids[$i]=$!
 
-echo "#### All 47 federates launched (46 CCpp + 1 Python). Bringing RTI to foreground."
+echo "#### All 74 federates launched (73 CCpp + 1 Python). Bringing RTI to foreground."
 fg %1
 echo "RTI exited. Waiting for federates..."
 for pid in "${pids[@]}"; do
