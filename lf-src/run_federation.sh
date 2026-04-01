@@ -26,16 +26,16 @@ BIN_DIR="$LF_AUTOWARE_HOME/fed-gen/AutowareFederated/bin"
 CARLA_FED_DIR="$LF_AUTOWARE_HOME/src-gen/lf-src/carla_interface/federate__ci"
 
 echo "#### Launching RTI"
-"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 74 &
+"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 72 &
 RTI=$!
 sleep 2
 
 i=0
 
 # 73 CCpp federates (IDs 0-72)
-for fed in cbf imu vvc rdf ptf vgof adf pc idec \
+for fed in cbf imu vvc rdf ptf vgof adf idec \
            ndt gyro ekf lem pid sf \
-           pcm l2m mtg \
+           pcm l2m \
            gs lcp ec pmf dbt ov of clf mot mbp ogm tlmbd tlc tla tlop ctle \
            yolox tls tlcm som ors ogmof \
            mp bpp bvp ps po mvp soc ss vs fp cg pv evls pg psa \
@@ -54,7 +54,7 @@ echo "#### Launching federate__ci (Python CARLA interface)"
 (cd "$CARLA_FED_DIR" && python3 -m federate__ci -i $FEDERATION_ID) &
 pids[$i]=$!
 
-echo "#### All 74 federates launched (73 CCpp + 1 Python). Bringing RTI to foreground."
+echo "#### All 72 federates launched (71 CCpp + 1 Python). Bringing RTI to foreground."
 fg %1
 echo "RTI exited. Waiting for federates..."
 for pid in "${pids[@]}"; do

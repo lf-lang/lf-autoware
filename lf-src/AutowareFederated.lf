@@ -18,7 +18,7 @@ import random_downsample_filter from "random_downsample_filter/random_downsample
 import passthrough_filter from "passthrough_filter/passthrough_filter_main.lf";
 import voxel_grid_outlier_filter from "voxel_grid_outlier_filter/voxel_grid_outlier_filter_main.lf";
 import approximate_downsample_filter from "approximate_downsample_filter/approximate_downsample_filter_main.lf";
-import pointcloud_concatenator from "pointcloud_concatenator/pointcloud_concatenator_main.lf";
+// pointcloud_concatenator: DEFERRED (template instantiation issue)
 import image_decompressor from "image_decompressor/image_decompressor_main.lf";
 
 // === Localization ===
@@ -32,7 +32,7 @@ import stop_filter from "stop_filter/stop_filter_main.lf";
 // === Map ===
 import pointcloud_map_loader from "pointcloud_map_loader/pointcloud_map_loader_main.lf";
 import lanelet2_map_loader from "lanelet2_map_loader/lanelet2_map_loader_main.lf";
-import map_tf_generator from "map_tf_generator/map_tf_generator_main.lf";
+// map_tf_generator: DEFERRED (inline class in .cpp)
 
 // === Perception ===
 import ground_segmentation from "ground_segmentation/ground_segmentation_main.lf";
@@ -111,7 +111,7 @@ federated reactor AutowareFederated {
     ptf = new passthrough_filter();
     vgof = new voxel_grid_outlier_filter();
     adf = new approximate_downsample_filter();
-    pc = new pointcloud_concatenator();
+    // pc = new pointcloud_concatenator();  // DEFERRED
     idec = new image_decompressor();
 
     // Localization (IDs 9-14)
@@ -125,7 +125,7 @@ federated reactor AutowareFederated {
     // Map (IDs 15-17)
     pcm = new pointcloud_map_loader();
     l2m = new lanelet2_map_loader();
-    mtg = new map_tf_generator();
+    // mtg = new map_tf_generator();  // DEFERRED
 
     // Perception (IDs 18-39)
     gs = new ground_segmentation();
