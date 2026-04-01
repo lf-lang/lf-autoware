@@ -39,3 +39,10 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     tf2_ros
     message_filters
 )
+
+# Link node implementation library
+find_library(LIB_CONCATENATE_DATA concatenate_data
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_CONCATENATE_DATA)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_CONCATENATE_DATA})
+endif()

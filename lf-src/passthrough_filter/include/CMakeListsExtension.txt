@@ -35,3 +35,15 @@ ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     tf2_ros
     message_filters
 )
+
+# Link node implementation libraries
+find_library(LIB_PP_FILTER pointcloud_preprocessor_filter
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PP_FILTER_BASE pointcloud_preprocessor_filter_base
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_PP_FILTER)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PP_FILTER})
+endif()
+if(LIB_PP_FILTER_BASE)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PP_FILTER_BASE})
+endif()
