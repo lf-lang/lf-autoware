@@ -6,9 +6,9 @@
 #
 # Usage:
 #   Terminal 1: Start CARLA server (headless — use rviz for visualization)
-#     cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=Low -RenderOffScreen
+#     cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=low -RenderOffScreen
 #     # With display (may crash on some GPU/driver combos):
-#     # cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=Low
+#     # cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=low
 #
 #   Terminal 2: Run this script
 #     bash ~/Documents/projects/parking-demo/lf-autoware/test_phase1_carla.sh
@@ -22,8 +22,8 @@ export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$
 export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 export PYTHONPATH=$(echo $PYTHONPATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 
-# Pin Autoware's CUDA/TensorRT to GPU 0 (RTX 3070)
-export CUDA_VISIBLE_DEVICES=0
+# Pin Autoware's CUDA/TensorRT to GPU 1 (GTX 1050 Ti) — GPU 0 reserved for CARLA
+export CUDA_VISIBLE_DEVICES=1
 
 # Use CycloneDDS for reliable large-message transport
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp

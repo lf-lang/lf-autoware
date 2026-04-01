@@ -20,7 +20,7 @@ source /opt/ros/humble/setup.bash
 source /home/shaokai/Documents/projects/parking-demo/lf-autoware/install/setup.bash 2>/dev/null
 export LF_AUTOWARE_HOME=/home/shaokai/Documents/projects/parking-demo/lf-autoware
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 
 BIN_DIR="$(cd "$(dirname "$0")" && pwd)"
 
