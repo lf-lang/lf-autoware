@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware PointCloudConcatenateDataSynchronizerComponent.
+ *
+ * Subscription-driven: synchronizes and fuses multiple LiDAR pointclouds.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pointcloud_preprocessor/concatenate_data/concatenate_and_time_sync_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor pointcloud_concatenator {
+    state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::PointCloudConcatenateDataSynchronizerComponent> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + POINTCLOUD_CONCATENATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::pointcloud_preprocessor::PointCloudConcatenateDataSynchronizerComponent>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pointcloud_preprocessor::PointCloudConcatenateDataSynchronizerComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pointcloud_preprocessor::PointCloudConcatenateDataSynchronizerComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    pc = new pointcloud_concatenator();
+}

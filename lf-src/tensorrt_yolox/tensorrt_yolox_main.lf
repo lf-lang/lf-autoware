@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware TrtYoloXNode.
+ *
+ * Subscription-driven: camera 2D object detection using TensorRT/CUDA.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/tensorrt_yolox/tensorrt_yolox_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor tensorrt_yolox {
+    state node:{= std::shared_ptr<autoware::tensorrt_yolox::TrtYoloXNode> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + TENSORRT_YOLOX_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::tensorrt_yolox::TrtYoloXNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::tensorrt_yolox::TrtYoloXNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::tensorrt_yolox::TrtYoloXNode>(self->node)));
+    =}
+}
+
+main reactor {
+    yolox = new tensorrt_yolox();
+}

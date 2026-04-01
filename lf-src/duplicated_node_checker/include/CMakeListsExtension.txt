@@ -1,0 +1,25 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_duplicated_node_checker REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_duplicated_node_checker
+    diagnostic_updater
+    rclcpp
+    rclcpp_components
+)
+
+find_library(LIB_DUPLICATED_NODE_CHECKER autoware_duplicated_node_checker
+    PATHS ${autoware_duplicated_node_checker_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_DUPLICATED_NODE_CHECKER)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_DUPLICATED_NODE_CHECKER})
+endif()

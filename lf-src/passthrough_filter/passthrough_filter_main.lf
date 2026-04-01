@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware PassThroughFilterUInt16Component.
+ *
+ * Subscription-driven: ring-based pointcloud filtering.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pointcloud_preprocessor/passthrough_filter/passthrough_filter_uint16_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor passthrough_filter {
+    state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::PassThroughFilterUInt16Component> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + PASSTHROUGH_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::pointcloud_preprocessor::PassThroughFilterUInt16Component>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pointcloud_preprocessor::PassThroughFilterUInt16Component>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pointcloud_preprocessor::PassThroughFilterUInt16Component>(self->node)));
+    =}
+}
+
+main reactor {
+    ptf = new passthrough_filter();
+}

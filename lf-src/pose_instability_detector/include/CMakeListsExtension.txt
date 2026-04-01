@@ -1,0 +1,33 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_pose_instability_detector REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_pose_instability_detector
+    diagnostic_msgs
+    geometry_msgs
+    nav_msgs
+    rclcpp
+    rclcpp_components
+    tf2
+    tf2_geometry_msgs
+)
+
+find_library(LIB_POSE_INSTABILITY_DETECTOR autoware_pose_instability_detector
+    PATHS ${autoware_pose_instability_detector_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_POSE_INSTABILITY_DETECTOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_POSE_INSTABILITY_DETECTOR})
+endif()

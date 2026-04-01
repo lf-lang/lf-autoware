@@ -1,0 +1,30 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_category_merger/src
+)
+
+find_package(autoware_traffic_light_category_merger REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tier4_perception_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_traffic_light_category_merger
+    autoware_utils
+    message_filters
+    rclcpp
+    rclcpp_components
+    tier4_perception_msgs
+)
+
+find_library(LIB_TRAFFIC_LIGHT_CATEGORY_MERGER autoware_traffic_light_category_merger
+    PATHS ${autoware_traffic_light_category_merger_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_TRAFFIC_LIGHT_CATEGORY_MERGER)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_TRAFFIC_LIGHT_CATEGORY_MERGER})
+endif()

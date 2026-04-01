@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware ImageTransportDecompressor.
+ *
+ * Subscription-driven: decompresses camera images.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/image_transport_decompressor/image_transport_decompressor.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor image_decompressor {
+    state node:{= std::shared_ptr<autoware::image_preprocessor::ImageTransportDecompressor> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + IMAGE_DECOMPRESSOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::image_preprocessor::ImageTransportDecompressor>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::image_preprocessor::ImageTransportDecompressor>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::image_preprocessor::ImageTransportDecompressor>(self->node)));
+    =}
+}
+
+main reactor {
+    id = new image_decompressor();
+}

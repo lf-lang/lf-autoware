@@ -1,0 +1,31 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_map_tf_generator REQUIRED)
+find_package(autoware_lanelet2_utils REQUIRED)
+find_package(autoware_map_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_map_tf_generator
+    autoware_lanelet2_utils
+    autoware_map_msgs
+    rclcpp
+    rclcpp_components
+    tf2
+    tf2_ros
+)
+
+find_library(LIB_MAP_TF_GENERATOR autoware_map_tf_generator
+    PATHS ${autoware_map_tf_generator_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_MAP_TF_GENERATOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_MAP_TF_GENERATOR})
+endif()

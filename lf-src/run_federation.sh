@@ -40,6 +40,7 @@ for fed in cbf imu vvc ndt gyro ekf pcm l2m gs lcp ec pmf dbt ov of clf \
     "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
     pids[$i]=$!
     i=$((i+1))
+    sleep 0.1  # Stagger launches to avoid RTI accept() overload
 done
 
 # Python CARLA federate (ID 46)

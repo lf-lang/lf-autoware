@@ -1,0 +1,40 @@
+/**
+ * LF reactor wrapping the Autoware LocalizationErrorMonitor.
+ *
+ * Subscription-driven: monitors localization quality via pose covariance.
+ * Has an internal diagnostics timer — let it run in the spin thread.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "localization_error_monitor.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor localization_error_monitor {
+    state node:{= std::shared_ptr<autoware::localization_error_monitor::LocalizationErrorMonitor> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + LOCALIZATION_ERROR_MONITOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::localization_error_monitor::LocalizationErrorMonitor>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::localization_error_monitor::LocalizationErrorMonitor>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::localization_error_monitor::LocalizationErrorMonitor>(self->node)));
+    =}
+}
+
+main reactor {
+    lem = new localization_error_monitor();
+}

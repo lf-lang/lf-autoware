@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware SimpleDetectedObjectMergerNode.
+ *
+ * Subscription-driven: merges detected objects from multiple detectors.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/simple_object_merger/simple_detected_object_merger_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor simple_object_merger {
+    state node:{= std::shared_ptr<autoware::simple_object_merger::SimpleDetectedObjectMergerNode> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + SIMPLE_OBJECT_MERGER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::simple_object_merger::SimpleDetectedObjectMergerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::simple_object_merger::SimpleDetectedObjectMergerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::simple_object_merger::SimpleDetectedObjectMergerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    som = new simple_object_merger();
+}

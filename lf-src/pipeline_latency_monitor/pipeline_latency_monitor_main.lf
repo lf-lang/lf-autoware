@@ -1,0 +1,47 @@
+/**
+ * LF reactor wrapping the Autoware PipelineLatencyMonitorNode.
+ *
+ * Timer-driven: monitors end-to-end pipeline latency.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "pipeline_latency_monitor_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor pipeline_latency_monitor {
+    state node:autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode*;
+    state node_shared_ptr:std::shared_ptr<autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + PIPELINE_LATENCY_MONITOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode(nodeOptions);
+        self->node->timer_->cancel();
+        self->node_shared_ptr = std::shared_ptr<autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode>(self->node);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::system::pipeline_latency_monitor::PipelineLatencyMonitorNode>(self->node_shared_ptr)));
+    =}
+
+    timer t(0, 1000 msec);
+    reaction (t) {=
+        self->node->on_timer();
+    =}
+}
+
+main reactor {
+    plm = new pipeline_latency_monitor();
+}

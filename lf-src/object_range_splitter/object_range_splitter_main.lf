@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware ObjectRangeSplitterNode.
+ *
+ * Subscription-driven: splits detected objects by distance range.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "object_range_splitter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor object_range_splitter {
+    state node:{= std::shared_ptr<autoware::object_range_splitter::ObjectRangeSplitterNode> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + OBJECT_RANGE_SPLITTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::object_range_splitter::ObjectRangeSplitterNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::object_range_splitter::ObjectRangeSplitterNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::object_range_splitter::ObjectRangeSplitterNode>(self->node)));
+    =}
+}
+
+main reactor {
+    ors = new object_range_splitter();
+}

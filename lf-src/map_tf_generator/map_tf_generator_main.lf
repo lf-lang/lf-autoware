@@ -1,0 +1,50 @@
+/**
+ * LF reactor wrapping the Autoware VectorMapTFGeneratorNode.
+ *
+ * Subscription-driven (one-shot): receives vector map, publishes static TF.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "utils.hpp"
+    #include "constants.hpp"
+    // Node class is defined inline in cpp — link to the built library
+    namespace autoware::map_tf_generator { class VectorMapTFGeneratorNode; }
+=}
+
+reactor map_tf_generator {
+    state node:{= std::shared_ptr<rclcpp::Node> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MAP_TF_GENERATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        // Use the component factory to create the node
+        auto factory = rclcpp_components::NodeFactory::make_shared(
+            "autoware::map_tf_generator::VectorMapTFGeneratorNode");
+        auto wrapper = factory->create_node_instance(nodeOptions);
+        self->node = wrapper.get_node_base_interface()->get_node_base_interface()
+            ? std::dynamic_pointer_cast<rclcpp::Node>(wrapper.get_node_instance())
+            : nullptr;
+
+        if (!self->node) {
+            // Fallback: just let the component loader handle it
+            self->node = std::make_shared<rclcpp::Node>("map_tf_generator", nodeOptions);
+        }
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<rclcpp::Node>>,
+            static_cast<void*>(new std::shared_ptr<rclcpp::Node>(self->node)));
+    =}
+}
+
+main reactor {
+    mtg = new map_tf_generator();
+}

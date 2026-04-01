@@ -1,0 +1,28 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/system/autoware_component_state_monitor/src
+)
+
+find_package(autoware_component_state_monitor REQUIRED)
+find_package(diagnostic_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tier4_system_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_component_state_monitor
+    diagnostic_msgs
+    rclcpp
+    rclcpp_components
+    tier4_system_msgs
+)
+
+find_library(LIB_COMPONENT_STATE_MONITOR autoware_component_state_monitor
+    PATHS ${autoware_component_state_monitor_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_COMPONENT_STATE_MONITOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_COMPONENT_STATE_MONITOR})
+endif()

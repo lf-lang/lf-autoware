@@ -1,0 +1,32 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_traffic_light_selector/src
+)
+
+find_package(autoware_traffic_light_selector REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(tier4_perception_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_traffic_light_selector
+    autoware_utils
+    message_filters
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    tier4_perception_msgs
+)
+
+find_library(LIB_TRAFFIC_LIGHT_SELECTOR autoware_traffic_light_selector
+    PATHS ${autoware_traffic_light_selector_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_TRAFFIC_LIGHT_SELECTOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_TRAFFIC_LIGHT_SELECTOR})
+endif()
