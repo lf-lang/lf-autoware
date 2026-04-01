@@ -46,3 +46,9 @@ find_library(LIB_CONCATENATE_DATA concatenate_data
 if(LIB_CONCATENATE_DATA)
     target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_CONCATENATE_DATA})
 endif()
+
+
+# Fix transitive dependency issues (PCL -> gdal -> netcdf -> curl)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES} CURL::libcurl ncurses)

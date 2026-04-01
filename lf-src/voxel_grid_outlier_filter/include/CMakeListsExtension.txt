@@ -47,3 +47,9 @@ endif()
 if(LIB_PP_FILTER_BASE)
     target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PP_FILTER_BASE})
 endif()
+
+
+# Fix transitive dependency issues (PCL -> gdal -> netcdf -> curl)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES} CURL::libcurl ncurses)
