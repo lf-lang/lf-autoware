@@ -13,6 +13,7 @@ include_directories(
 )
 
 find_package(autoware_pointcloud_preprocessor REQUIRED)
+find_package(autoware_pcl_extensions REQUIRED)
 find_package(autoware_point_types REQUIRED)
 find_package(autoware_utils REQUIRED)
 find_package(pcl_conversions REQUIRED)
@@ -25,6 +26,7 @@ find_package(message_filters REQUIRED)
 
 ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_pointcloud_preprocessor
+    autoware_pcl_extensions
     autoware_point_types
     autoware_utils
     pcl_conversions
