@@ -10,24 +10,19 @@ target CCpp {
     coordination: decentralized
 };
 
-// Sensing
+// Sensing (original 46 federates — IDs 0-45 preserved)
 import crop_box_filter from "crop_box_filter/crop_box_filter_main.lf";
-import crop_box_filter_mirror from "crop_box_filter_mirror/crop_box_filter_mirror_main.lf";
 import imu_corrector from "imu_corrector/imu_corrector_main.lf";
 import vehicle_velocity_converter from "vehicle_velocity_converter/vehicle_velocity_converter_main.lf";
 
 // Localization
 import ndt_scan_matcher from "ndt_scan_matcher/ndt_scan_matcher_main.lf";
-import pointcloud_downsampling from "pointcloud_downsampling/pointcloud_downsampling_main.lf";
 import gyro_odometer from "gyro_odometer/gyro_odometer_main.lf";
 import ekf_localizer from "ekf_localizer/ekf_localizer_main.lf";
-import pose_initializer from "pose_initializer/pose_initializer_main.lf";
-import automatic_pose_initializer from "automatic_pose_initializer/automatic_pose_initializer_main.lf";
 
 // Map
 import pointcloud_map_loader from "pointcloud_map_loader/pointcloud_map_loader_main.lf";
 import lanelet2_map_loader from "lanelet2_map_loader/lanelet2_map_loader_main.lf";
-import map_projection_loader from "map_projection_loader/map_projection_loader_main.lf";
 
 // Perception
 import ground_segmentation from "ground_segmentation/ground_segmentation_main.lf";
@@ -46,7 +41,6 @@ import traffic_light_classifier from "traffic_light_classifier/traffic_light_cla
 import traffic_light_arbiter from "traffic_light_arbiter/traffic_light_arbiter_main.lf";
 import traffic_light_occlusion_predictor from "traffic_light_occlusion_predictor/traffic_light_occlusion_predictor_main.lf";
 import crosswalk_traffic_light_estimator from "crosswalk_traffic_light_estimator/crosswalk_traffic_light_estimator_main.lf";
-import traffic_light_fine_detector from "traffic_light_fine_detector/traffic_light_fine_detector_main.lf";
 
 // Planning
 import mission_planner from "mission_planner/mission_planner_main.lf";
@@ -76,41 +70,25 @@ import collision_detector from "collision_detector/collision_detector_main.lf";
 // Bridge
 import bridge_interface from "bridge_interface/bridge_interface_main.lf";
 
-// Vehicle
-import robot_state_publisher from "robot_state_publisher/robot_state_publisher_main.lf";
-import image_transport_relay from "image_transport_relay/image_transport_relay_main.lf";
-
-// System
-import mrm_handler from "mrm_handler/mrm_handler_main.lf";
-import mrm_emergency_stop_operator from "mrm_emergency_stop_operator/mrm_emergency_stop_operator_main.lf";
-import diagnostic_aggregator from "diagnostic_aggregator/diagnostic_aggregator_main.lf";
-import system_monitor from "system_monitor/system_monitor_main.lf";
-import default_adapi from "default_adapi/default_adapi_main.lf";
-
-// CARLA Interface (CCpp stub — real implementation is Python, built separately)
+// CARLA Interface (CCpp stub — swapped with Python federate at runtime)
 import carla_interface from "carla_interface/carla_interface_main.lf";
 
 federated reactor AutowareFederated {
-    // Sensing
+    // Sensing (IDs 0-2)
     cbf = new crop_box_filter();
-    cbfm = new crop_box_filter_mirror();
     imu = new imu_corrector();
     vvc = new vehicle_velocity_converter();
 
-    // Localization
+    // Localization (IDs 3-5)
     ndt = new ndt_scan_matcher();
-    pds = new pointcloud_downsampling();
     gyro = new gyro_odometer();
     ekf = new ekf_localizer();
-    pi = new pose_initializer();
-    api = new automatic_pose_initializer();
 
-    // Map
+    // Map (IDs 6-7)
     pcm = new pointcloud_map_loader();
     l2m = new lanelet2_map_loader();
-    mpl = new map_projection_loader();
 
-    // Perception
+    // Perception (IDs 8-23)
     gs = new ground_segmentation();
     lcp = new lidar_centerpoint();
     ec = new euclidean_cluster();
@@ -127,9 +105,8 @@ federated reactor AutowareFederated {
     tla = new traffic_light_arbiter();
     tlop = new traffic_light_occlusion_predictor();
     ctle = new crosswalk_traffic_light_estimator();
-    tlfd = new traffic_light_fine_detector();
 
-    // Planning
+    // Planning (IDs 24-36)
     mp = new mission_planner();
     bpp = new behavior_path_planner();
     bvp = new behavior_velocity_planner();
@@ -144,7 +121,7 @@ federated reactor AutowareFederated {
     pv = new planning_validator();
     evls = new external_velocity_limit_selector();
 
-    // Control
+    // Control (IDs 37-44)
     tf = new trajectory_follower();
     sd = new shift_decider();
     vcg = new vehicle_cmd_gate();
@@ -154,21 +131,11 @@ federated reactor AutowareFederated {
     aeb = new autonomous_emergency_braking();
     cd = new collision_detector();
 
-    // Bridge
+    // Bridge (ID 45)
     bridge = new bridge_interface();
 
-    // Vehicle
-    rsp = new robot_state_publisher();
-    itr = new image_transport_relay();
-
-    // System
-    mrm = new mrm_handler();
-    meso = new mrm_emergency_stop_operator();
-    da = new diagnostic_aggregator();
-    sm = new system_monitor();
-    adapi = new default_adapi();
-
-    // CARLA Interface (CCpp stub — swap with Python federate at runtime)
+    // CARLA Interface — CCpp stub, ID 46
+    // At runtime, swap federate__ci binary with Python CarlaInterface federate.
     ci = new carla_interface();
 
     // LF connections: Control -> BridgeInterface

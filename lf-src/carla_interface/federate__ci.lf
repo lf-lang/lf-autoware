@@ -1,0 +1,133 @@
+/**
+ * Python CARLA interface federate for the AutowareFederated federation.
+ *
+ * This federate replaces the CCpp stub (carla_interface_main.lf) at runtime.
+ * It uses the Python target, which builds on the C runtime, so decentralized
+ * federation coordination works seamlessly with the other CCpp federates.
+ *
+ * FEDERATE_ID=46, NUMBER_OF_FEDERATES=47, coordination=decentralized.
+ *
+ * Usage:
+ *   1. Build:  lfc lf-src/carla_interface/federate__ci.lf
+ *   2. Run:    python3 -m federate__ci -i <FEDERATION_ID>
+ *              (from the src-gen/federate__ci directory)
+ */
+target Python {
+    coordination: decentralized,
+    compile-definitions: {
+        FEDERATED_DECENTRALIZED: "",
+        EXECUTABLE_PREAMBLE: "",
+        NUMBER_OF_FEDERATES: "47",
+        FEDERATE_ID: "46",
+        FEDERATED: "",
+        LF_CLOCK_SYNC: "1",
+        _LF_FEDERATE_NAMES_COMMA_SEPARATED: "\"federate__cbf,federate__imu,federate__vvc,federate__ndt,federate__gyro,federate__ekf,federate__pcm,federate__l2m,federate__gs,federate__lcp,federate__ec,federate__pmf,federate__dbt,federate__ov,federate__of,federate__clf,federate__mot,federate__mbp,federate__ogm,federate__tlmbd,federate__tlc,federate__tla,federate__tlop,federate__ctle,federate__mp,federate__bpp,federate__bvp,federate__ps,federate__po,federate__mvp,federate__soc,federate__ss,federate__vs,federate__fp,federate__cg,federate__pv,federate__evls,federate__tf,federate__sd,federate__vcg,federate__omtm,federate__ldc,federate__cv,federate__aeb,federate__cd,federate__bridge,federate__ci\""
+    },
+    keepalive: true,
+    files: ["carla_bridge.py"]
+}
+
+preamble {=
+    import os
+    import sys
+
+    # Add the autoware_carla_interface package to the path so we can
+    # reuse its sensor data conversion and ROS publishing code.
+    lf_autoware_home = os.environ.get("LF_AUTOWARE_HOME", "")
+    carla_pkg = os.path.join(
+        lf_autoware_home,
+        "src/universe/autoware_universe/simulator/autoware_carla_interface/src"
+    )
+    if carla_pkg not in sys.path:
+        sys.path.insert(0, carla_pkg)
+
+    from carla_bridge import CarlaBridge
+=}
+
+/**
+ * Carla reactor: owns the CARLA client, world, ego vehicle, and sensors.
+ * Advances the simulation one tick per reaction cycle.
+ */
+reactor Carla {
+    input control_cmd
+    output sensor_tick
+
+    state bridge
+
+    reaction(startup) -> sensor_tick {=
+        # Read config from environment or defaults
+        config = {
+            "host": os.environ.get("CARLA_HOST", "localhost"),
+            "port": int(os.environ.get("CARLA_PORT", "2000")),
+            "timeout": float(os.environ.get("CARLA_TIMEOUT", "20")),
+            "carla_map": os.environ.get("CARLA_MAP", "Town01"),
+            "fixed_delta_seconds": float(os.environ.get("CARLA_FIXED_DELTA", "0.05")),
+            "vehicle_type": os.environ.get("CARLA_VEHICLE_TYPE", "vehicle.toyota.prius"),
+            "spawn_point": os.environ.get("CARLA_SPAWN_POINT", "None"),
+            "ego_vehicle_role_name": os.environ.get("CARLA_EGO_ROLE", "ego_vehicle"),
+            "use_traffic_manager": os.environ.get("CARLA_USE_TM", "False").lower() == "true",
+            "sensor_mapping_file": os.environ.get(
+                "CARLA_SENSOR_MAPPING",
+                os.path.join(
+                    lf_autoware_home,
+                    "src/universe/autoware_universe/simulator/"
+                    "autoware_carla_interface/config/sensor_mapping.yaml"
+                )
+            ),
+            "sensor_kit_name": os.environ.get(
+                "CARLA_SENSOR_KIT", "carla_sensor_kit_description"
+            ),
+        }
+
+        self.bridge = CarlaBridge(config)
+        self.bridge.initialize()
+
+        # First tick to spawn sensors and get initial data
+        sensor_data = self.bridge.step()
+        sensor_tick.set(True)
+    =}
+
+    reaction(control_cmd) -> sensor_tick {=
+        # Apply the control command from Autoware, then tick
+        if control_cmd.value is not None:
+            self.bridge.apply_control(control_cmd.value)
+
+        sensor_data = self.bridge.step()
+        sensor_tick.set(True)
+    =}
+
+    reaction(shutdown) {=
+        if self.bridge:
+            self.bridge.cleanup()
+    =}
+}
+
+/**
+ * ControlBridge reactor: subscribes to Autoware's control command topic
+ * and forwards it into the LF domain. Also listens for the sensor_tick
+ * to close the loop.
+ */
+reactor ControlBridge {
+    input sensor_tick
+    output control_cmd
+
+    state latest_control
+
+    reaction(startup) {=
+        self.latest_control = None
+    =}
+
+    reaction(sensor_tick) -> control_cmd {=
+        # Forward whatever the latest control command is.
+        # The ROS subscription in CarlaBridge updates it asynchronously.
+        control_cmd.set(self.latest_control)
+    =}
+}
+
+main reactor {
+    carla = new Carla()
+    ctrl = new ControlBridge()
+
+    carla.sensor_tick -> ctrl.sensor_tick
+    ctrl.control_cmd -> carla.control_cmd after 0
+}
