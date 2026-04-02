@@ -37,14 +37,14 @@ reactor path_smoother {
     =}
 
     // LF input: path from behavior_velocity_planner
-    reaction (path_in) -> traj_out {=
+    reaction (path_in) -> path_out {=
         if (path_in->is_present) {
             self->node->onPath(path_in->value);
-            if (self->node->lf_traj_is_set) {
-                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                    self->node->lf_output_traj);
-                lf_set(traj_out, msg);
-                self->node->lf_traj_is_set = false;
+            if (self->node->lf_path_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Path>(
+                    self->node->lf_output_path);
+                lf_set(path_out, msg);
+                self->node->lf_path_is_set = false;
             }
         }
     =}
