@@ -233,3 +233,76 @@ bpp.path_out ~> bvp.path_in serializer "ros2";
 ```
 
 This uses `rclcpp::Serialization<MessageT>` to serialize/deserialize ROS messages over the LF network layer. This is necessary for federated execution where each federate is a separate process.
+
+## Federation Bootstrap Issues (Mode D)
+
+### Bootstrap Dependency Chain
+
+The federation cannot run fully standalone — some nodes must publish data before others can start. The bootstrap chain is:
+
+```
+map_projection_loader → /map/map_projector_info
+    → lanelet2_map_loader → /vector_map
+        → vector_map_tf_generator → "map" TF frame
+            → ALL other nodes (need map → base_link transform)
+```
+
+**Solution:** `map_projection_loader`, `vector_map_tf_generator`, and `robot_state_publisher` run as **ROS infrastructure nodes** (`run_infrastructure.sh`), separate from the federation. This avoids the chicken-and-egg problem where the federation can't start without TF, but TF can't be published without the federation's map data.
+
+### NUMBER_OF_FEDERATES Mismatch
+
+Every CCpp federate has `NUMBER_OF_FEDERATES` baked in at compile time. Adding or removing a federate requires **rebuilding all** binaries. The RTI's `-n` flag must match.
+
+If you add a node to the federation but only rebuild that one binary, the RTI will accept all connections but the old federates' socket arrays are sized wrong, causing "Broken pipe" errors and cascade failure.
+
+**Workaround:** For nodes that don't need LF connections (like `map_projection_loader`), run them as standalone ROS nodes in the infrastructure script instead of adding them to the federation.
+
+### TensorRT Compute Capability
+
+`tensorrt_yolox` builds TensorRT engines for a specific GPU compute capability. The engine file is cached in `~/autoware_data/`. If `CUDA_VISIBLE_DEVICES` switches GPUs (e.g., from RTX 3070 compute 8.6 to GTX 1050 Ti compute 6.1), the cached engine is incompatible and the node crashes:
+
+```
+IRuntime::deserializeCudaEngine: Error Code 6: expecting compute 6.1 got compute 8.6
+```
+
+**Fix:** Either rebuild the TensorRT engine on the target GPU, or exclude `tensorrt_yolox` from the federation (it's not on the critical driving path).
+
+### YAML Launch Substitution Variables
+
+Autoware YAML parameter files contain `$(var ...)` launch substitution variables (e.g., `$(var lanelet2_map_path)`). These are resolved by the ROS 2 launch system but **not** by LF's YAML loader.
+
+**Fix:** Use `resolve_yaml_vars()` from `utils.hpp` to string-replace the substitutions before loading:
+
+```cpp
+std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
+    {"$(var lanelet2_map_path)", map_path + "/lanelet2_map.osm"}
+});
+rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(resolved_yaml.c_str(), "/**");
+```
+
+### NumPy Version Conflict
+
+The Python CARLA federate imports `cv_bridge` and `transforms3d` which require NumPy 1.x. Conda environments override system NumPy with 2.x, causing `_ARRAY_API not found` and `np.float` removal errors.
+
+**Fix:**
+1. `run_federation.sh` strips conda from PATH/LD_LIBRARY_PATH/PYTHONPATH
+2. System NumPy must be `<= 1.23.5` (1.24+ removed `np.float`, 2.x is incompatible with `cv_bridge`)
+
+```bash
+pip install 'numpy==1.23.5'
+```
+
+### Infrastructure Script (`run_infrastructure.sh`)
+
+The infrastructure script launches exactly 3 node groups:
+
+1. **map_projection_loader** — publishes `/map/map_projector_info` (needed by `lanelet2_map_loader` in the federation)
+2. **vector_map_tf_generator** — subscribes to `/vector_map`, publishes `map` TF frame
+3. **vehicle.launch.xml** — `robot_state_publisher` with proper xacro arguments (`vehicle_model`, `sensor_model`)
+4. **RViz** — with Autoware config file
+
+Key learnings:
+- Must use `autoware_vector_map_tf_generator` (not `vector_map_tf_generator_node`) as the executable name
+- `robot_state_publisher` needs the vehicle xacro with `vehicle_model` and `sensor_model` arguments — use `tier4_vehicle_launch/vehicle.launch.xml` instead of raw xacro
+- Don't use `set -e` — background processes returning non-zero kill the script
+- RViz needs `-d autoware.rviz` config for the Autoware UI
