@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware hazard_status_converter.
+ *
+ * Subscription-driven: converts diagnostic graph to hazard status format.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "converter.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor hazard_status_converter {
+    state node:{= std::shared_ptr<autoware::hazard_status_converter::Converter> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + HAZARD_STATUS_CONVERTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::hazard_status_converter::Converter>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::hazard_status_converter::Converter>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::hazard_status_converter::Converter>(self->node)));
+    =}
+}
+
+main reactor {
+    hsc = new hazard_status_converter();
+}

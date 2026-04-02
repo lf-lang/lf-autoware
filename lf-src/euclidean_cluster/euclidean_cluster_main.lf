@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "voxel_grid_based_euclidean_cluster_node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor euclidean_cluster {
     state node:{= std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + EUCLIDEAN_CLUSTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>(nodeOptions);
 

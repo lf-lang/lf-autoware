@@ -1,0 +1,59 @@
+/**
+ * LF reactor wrapping image transport relay nodes.
+ *
+ * Subscription-driven container: creates relay nodes for traffic light
+ * camera info and compressed image topics. Uses topic_tools::RelayNode.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "topic_tools/relay_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor image_transport_relay {
+    state executor:{= std::shared_ptr<rclcpp::executors::SingleThreadedExecutor> =};
+
+    reaction (startup) {=
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+
+        // Camera info relay: /sensing/camera/traffic_light/.../camera_info -> camera_info
+        rclcpp::NodeOptions camera_info_opts;
+        camera_info_opts.parameter_overrides().push_back(
+            rclcpp::Parameter("input_topic",
+                "/sensing/camera/traffic_light/camera_info"));
+        camera_info_opts.parameter_overrides().push_back(
+            rclcpp::Parameter("output_topic",
+                "/sensing/camera/traffic_light/image_raw/camera_info"));
+        camera_info_opts.parameter_overrides().push_back(
+            rclcpp::Parameter("type", "sensor_msgs/msg/CameraInfo"));
+
+        auto camera_info_relay = std::make_shared<topic_tools::RelayNode>(camera_info_opts);
+        self->executor->add_node(camera_info_relay);
+
+        // Spin all relay nodes in a background thread
+        auto exec = self->executor;
+        pthread_t spinner_thread;
+        pthread_create(&spinner_thread, NULL, [](void* arg) -> void* {
+            auto executor = *static_cast<std::shared_ptr<
+                rclcpp::executors::SingleThreadedExecutor>*>(arg);
+            while (rclcpp::ok()) {
+                executor->spin_some(std::chrono::milliseconds(1));
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+            delete static_cast<std::shared_ptr<
+                rclcpp::executors::SingleThreadedExecutor>*>(arg);
+            return nullptr;
+        }, static_cast<void*>(new std::shared_ptr<
+            rclcpp::executors::SingleThreadedExecutor>(exec)));
+    =}
+}
+
+main reactor {
+    itr = new image_transport_relay();
+}

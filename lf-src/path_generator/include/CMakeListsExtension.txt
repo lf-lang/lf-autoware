@@ -1,0 +1,44 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/build/autoware_path_generator/include
+)
+
+find_package(autoware_path_generator REQUIRED)
+find_package(autoware_internal_planning_msgs REQUIRED)
+find_package(autoware_lanelet2_extension REQUIRED)
+find_package(autoware_lanelet2_utils REQUIRED)
+find_package(autoware_motion_utils REQUIRED)
+find_package(autoware_planning_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_info_utils REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_path_generator
+    autoware_internal_planning_msgs
+    autoware_lanelet2_extension
+    autoware_lanelet2_utils
+    autoware_motion_utils
+    autoware_planning_msgs
+    autoware_utils
+    autoware_vehicle_info_utils
+    rclcpp
+    rclcpp_components
+)
+
+find_library(LIB_PATH_GENERATOR autoware_path_generator
+    PATHS ${autoware_path_generator_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_PATH_GENERATOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PATH_GENERATOR})
+endif()

@@ -18,8 +18,11 @@ reactor map_based_prediction {
     state node:{= std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MAP_BASED_PREDICTION_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::map_based_prediction::MapBasedPredictionNode>(nodeOptions);
 

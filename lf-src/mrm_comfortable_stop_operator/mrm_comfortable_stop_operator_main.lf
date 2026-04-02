@@ -1,0 +1,47 @@
+/**
+ * LF reactor wrapping the Autoware MrmComfortableStopOperator.
+ *
+ * Timer-driven: generates comfortable stop trajectory for MRM.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/mrm_comfortable_stop_operator/mrm_comfortable_stop_operator_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor mrm_comfortable_stop_operator {
+    state node:autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator*;
+    state node_shared_ptr:std::shared_ptr<autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MRM_COMFORTABLE_STOP_OPERATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator(nodeOptions);
+        self->node->timer_->cancel();
+        self->node_shared_ptr = std::shared_ptr<autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator>(self->node);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::mrm_comfortable_stop_operator::MrmComfortableStopOperator>(self->node_shared_ptr)));
+    =}
+
+    timer t(0, 100 msec);
+    reaction (t) {=
+        self->node->onTimer();
+    =}
+}
+
+main reactor {
+    mcso = new mrm_comfortable_stop_operator();
+}

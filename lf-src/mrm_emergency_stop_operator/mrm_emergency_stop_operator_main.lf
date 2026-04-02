@@ -1,0 +1,58 @@
+/**
+ * LF reactor wrapping the Autoware Universe MrmEmergencyStopOperator.
+ *
+ * Timer-driven node: generates emergency stop control commands when
+ * MRM emergency stop is triggered. Publishes zero-velocity control.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/mrm_emergency_stop_operator/mrm_emergency_stop_operator_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor mrm_emergency_stop_operator {
+    state node:autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator*;
+    state node_shared_ptr:std::shared_ptr<autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MRM_EMERGENCY_STOP_OPERATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator(
+            nodeOptions);
+
+        // Cancel the internal ROS2 timer (we use LF timer instead)
+        self->node->timer_->cancel();
+
+        self->node_shared_ptr = std::shared_ptr<
+            autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator>(self->node);
+
+        // Start spin thread for subscription and service callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<
+                autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator>>,
+            static_cast<void*>(
+                new std::shared_ptr<
+                    autoware::mrm_emergency_stop_operator::MrmEmergencyStopOperator>(
+                        self->node_shared_ptr)));
+    =}
+
+    // Timer at 100ms (10Hz) matching the node's default update_rate
+    timer t(0, 100 msec);
+    reaction (t) {=
+        self->node->onTimer();
+    =}
+}
+
+main reactor {
+    meso = new mrm_emergency_stop_operator();
+}

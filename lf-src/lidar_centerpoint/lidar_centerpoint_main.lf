@@ -18,8 +18,28 @@ reactor lidar_centerpoint {
     state node:{= std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + LIDAR_CENTERPOINT_PARAM;
+        std::string common_path = home + "/" + LIDAR_CENTERPOINT_COMMON_PARAM;
+        std::string data_path = get_default_data_path();
+        std::string ml_pkg_path = data_path + "/" + LIDAR_CENTERPOINT_ML_PACKAGE_PARAM;
+        std::string class_remapper_path = data_path + "/" + LIDAR_CENTERPOINT_CLASS_REMAPPER_PARAM;
+
+        // The centerpoint YAML contains $(var model_path) and $(var model_name)
+        // launch substitutions. Resolve them before loading.
+        std::string model_dir = data_path + "/lidar_centerpoint";
+        std::string model_name = "centerpoint_tiny";
+        std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
+            {"$(var model_path)", model_dir},
+            {"$(var model_name)", model_name}
+        });
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {resolved_yaml, "/**"},
+            {common_path, "/**"},
+            {ml_pkg_path, "/**"},
+            {class_remapper_path, "/**"}
+        });
 
         self->node = std::make_shared<autoware::lidar_centerpoint::LidarCenterPointNode>(nodeOptions);
 

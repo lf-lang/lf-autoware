@@ -1,0 +1,47 @@
+/**
+ * LF reactor wrapping the Autoware PoseInstabilityDetector.
+ *
+ * Timer-driven: detects sudden jumps in localization pose.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pose_instability_detector/pose_instability_detector.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor pose_instability_detector {
+    state node:autoware::pose_instability_detector::PoseInstabilityDetector*;
+    state node_shared_ptr:std::shared_ptr<autoware::pose_instability_detector::PoseInstabilityDetector>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + POSE_INSTABILITY_DETECTOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::pose_instability_detector::PoseInstabilityDetector(nodeOptions);
+        self->node->timer_->cancel();
+        self->node_shared_ptr = std::shared_ptr<autoware::pose_instability_detector::PoseInstabilityDetector>(self->node);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pose_instability_detector::PoseInstabilityDetector>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pose_instability_detector::PoseInstabilityDetector>(self->node_shared_ptr)));
+    =}
+
+    timer t(0, 100 msec);
+    reaction (t) {=
+        self->node->callback_timer();
+    =}
+}
+
+main reactor {
+    pid = new pose_instability_detector();
+}

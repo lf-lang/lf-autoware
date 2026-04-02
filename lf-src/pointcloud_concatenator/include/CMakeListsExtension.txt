@@ -1,0 +1,59 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_pointcloud_preprocessor REQUIRED)
+find_package(autoware_point_types REQUIRED)
+find_package(autoware_sensing_msgs REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(autoware_vehicle_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(message_filters REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_pointcloud_preprocessor
+    autoware_point_types
+    autoware_sensing_msgs
+    autoware_utils
+    autoware_vehicle_msgs
+    pcl_conversions
+    pcl_ros
+    sensor_msgs
+    rclcpp
+    rclcpp_components
+    tf2_ros
+    message_filters
+)
+
+# Link node implementation libraries
+find_library(LIB_CONCATENATE_DATA concatenate_data
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PP_FILTER_BASE pointcloud_preprocessor_filter_base
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_CONCATENATE_DATA)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_CONCATENATE_DATA})
+endif()
+if(LIB_PP_FILTER_BASE)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_PP_FILTER_BASE})
+endif()
+
+
+# Fix transitive dependency issues (PCL -> gdal -> netcdf -> curl)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(CURL REQUIRED)
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${PCL_LIBRARIES} CURL::libcurl ncurses)

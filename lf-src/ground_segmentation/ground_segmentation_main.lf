@@ -18,8 +18,14 @@ reactor ground_segmentation {
     state node:{= std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + SCAN_GROUND_FILTER_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
 
         self->node = std::make_shared<autoware::ground_segmentation::ScanGroundFilterComponent>(nodeOptions);
 

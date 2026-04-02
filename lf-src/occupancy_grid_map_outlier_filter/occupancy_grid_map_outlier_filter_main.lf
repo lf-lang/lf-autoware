@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware OccupancyGridMapOutlierFilterComponent.
+ *
+ * Subscription-driven: filters outliers using occupancy grid map.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "occupancy_grid_map_outlier_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor occupancy_grid_map_outlier_filter {
+    state node:{= std::shared_ptr<autoware::occupancy_grid_map_outlier_filter::OccupancyGridMapOutlierFilterComponent> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + OCCUPANCY_GRID_MAP_OUTLIER_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::occupancy_grid_map_outlier_filter::OccupancyGridMapOutlierFilterComponent>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::occupancy_grid_map_outlier_filter::OccupancyGridMapOutlierFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::occupancy_grid_map_outlier_filter::OccupancyGridMapOutlierFilterComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    ogmof = new occupancy_grid_map_outlier_filter();
+}

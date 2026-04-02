@@ -1,0 +1,42 @@
+/**
+ * LF reactor wrapping the Autoware PathSampler.
+ *
+ * Subscription-driven: alternative path planning via sampling.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware_path_sampler/node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor path_sampler {
+    state node:{= std::shared_ptr<autoware::path_sampler::PathSampler> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + PATH_SAMPLER_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
+
+        self->node = std::make_shared<autoware::path_sampler::PathSampler>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::path_sampler::PathSampler>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::path_sampler::PathSampler>(self->node)));
+    =}
+}
+
+main reactor {
+    ps = new path_sampler();
+}

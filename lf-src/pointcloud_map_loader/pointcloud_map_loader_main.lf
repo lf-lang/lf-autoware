@@ -21,8 +21,16 @@ reactor pointcloud_map_loader {
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + POINTCLOUD_MAP_LOADER_PARAM;
 
+        // The YAML contains $(var ...) launch substitutions that cannot be
+        // parsed directly. Resolve them before loading.
+        std::string map_path = get_default_map_path();
+        std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
+            {"$(var pointcloud_map_path)", map_path + "/pointcloud_map.pcd"},
+            {"$(var pointcloud_map_metadata_path)", map_path + "/pointcloud_map_metadata.yaml"}
+        });
+
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+            resolved_yaml.c_str(), "/**");
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::map_loader::PointCloudMapLoaderNode>(nodeOptions);

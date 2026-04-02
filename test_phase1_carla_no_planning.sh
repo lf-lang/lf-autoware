@@ -14,7 +14,7 @@ export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$
 export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 export PYTHONPATH=$(echo $PYTHONPATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 source /opt/ros/humble/setup.bash
 source ~/Documents/projects/parking-demo/lf-autoware/install/setup.bash 2>/dev/null

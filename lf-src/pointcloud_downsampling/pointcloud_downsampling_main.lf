@@ -1,0 +1,43 @@
+/**
+ * LF reactor wrapping the Autoware Universe VoxelGridDownsampleFilter.
+ *
+ * Subscription-driven node: downsamples pointclouds using a voxel grid
+ * for NDT scan matching input. Runs passively via ROS callbacks.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pointcloud_preprocessor/downsample_filter/voxel_grid_downsample_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor pointcloud_downsampling {
+    state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + POINTCLOUD_DOWNSAMPLING_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<
+            autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent>(nodeOptions);
+
+        // Start spin thread for subscription callbacks
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent>(
+                    self->node)));
+    =}
+}
+
+main reactor {
+    pds = new pointcloud_downsampling();
+}

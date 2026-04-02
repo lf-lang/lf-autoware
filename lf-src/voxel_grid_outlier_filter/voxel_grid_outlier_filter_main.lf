@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware VoxelGridOutlierFilterComponent.
+ *
+ * Subscription-driven: outlier removal from pointcloud.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pointcloud_preprocessor/outlier_filter/voxel_grid_outlier_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor voxel_grid_outlier_filter {
+    state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridOutlierFilterComponent> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + VOXEL_GRID_OUTLIER_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::pointcloud_preprocessor::VoxelGridOutlierFilterComponent>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridOutlierFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridOutlierFilterComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    vgof = new voxel_grid_outlier_filter();
+}

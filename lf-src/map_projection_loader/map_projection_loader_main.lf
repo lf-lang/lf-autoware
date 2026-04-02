@@ -1,0 +1,49 @@
+/**
+ * LF reactor wrapping the Autoware Core MapProjectionLoader.
+ *
+ * One-shot node: loads map projection info from YAML/lanelet2 and
+ * publishes it once on a latched topic. Runs passively after startup.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/map_projection_loader/map_projection_loader.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor map_projection_loader {
+    state node:{= std::shared_ptr<autoware::map_projection_loader::MapProjectionLoader> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + MAP_PROJECTION_LOADER_PARAM;
+        std::string map_path = get_default_map_path();
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        // Set the lanelet2 map path parameter
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("lanelet2_map_path",
+                map_path + "/lanelet2_map.osm"));
+
+        self->node = std::make_shared<autoware::map_projection_loader::MapProjectionLoader>(
+            nodeOptions);
+
+        // Start spin thread
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::map_projection_loader::MapProjectionLoader>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::map_projection_loader::MapProjectionLoader>(
+                    self->node)));
+    =}
+}
+
+main reactor {
+    mpl = new map_projection_loader();
+}

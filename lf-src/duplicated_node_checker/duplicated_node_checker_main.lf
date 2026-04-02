@@ -1,0 +1,47 @@
+/**
+ * LF reactor wrapping the Autoware DuplicatedNodeChecker.
+ *
+ * Timer-driven: checks for duplicate ROS node names.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/duplicated_node_checker/duplicated_node_checker_core.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor duplicated_node_checker {
+    state node:autoware::duplicated_node_checker::DuplicatedNodeChecker*;
+    state node_shared_ptr:std::shared_ptr<autoware::duplicated_node_checker::DuplicatedNodeChecker>;
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + DUPLICATED_NODE_CHECKER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = new autoware::duplicated_node_checker::DuplicatedNodeChecker(nodeOptions);
+        self->node->timer_->cancel();
+        self->node_shared_ptr = std::shared_ptr<autoware::duplicated_node_checker::DuplicatedNodeChecker>(self->node);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::duplicated_node_checker::DuplicatedNodeChecker>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::duplicated_node_checker::DuplicatedNodeChecker>(self->node_shared_ptr)));
+    =}
+
+    timer t(0, 1000 msec);
+    reaction (t) {=
+        self->node->onTimer();
+    =}
+}
+
+main reactor {
+    dnc = new duplicated_node_checker();
+}

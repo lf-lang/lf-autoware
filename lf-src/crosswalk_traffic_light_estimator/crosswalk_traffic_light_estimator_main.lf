@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "autoware_crosswalk_traffic_light_estimator/node.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor crosswalk_traffic_light_estimator {
     state node:{= std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + CROSSWALK_TRAFFIC_LIGHT_ESTIMATOR_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>(nodeOptions);
 

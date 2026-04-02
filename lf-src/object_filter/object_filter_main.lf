@@ -5,14 +5,18 @@ target CCpp {
 preamble {=
     #include "detected_object_lanelet_filter.hpp"
     #include "utils.hpp"
+    #include "constants.hpp"
 =}
 
 reactor object_filter {
     state node:{= std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode> =};
 
     reaction (startup) {=
-        rclcpp::NodeOptions nodeOptions;
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + OBJECT_LANELET_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
 
         self->node = std::make_shared<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>(nodeOptions);
 

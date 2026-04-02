@@ -1,0 +1,41 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+)
+
+find_package(autoware_external_cmd_selector REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
+find_package(autoware_vehicle_msgs REQUIRED)
+find_package(diagnostic_updater REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tier4_control_msgs REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_external_cmd_selector
+    autoware_adapi_v1_msgs
+    autoware_vehicle_msgs
+    diagnostic_updater
+    geometry_msgs
+    rclcpp
+    rclcpp_components
+    std_msgs
+    tier4_control_msgs
+)
+
+find_library(LIB_EXTERNAL_CMD_SELECTOR autoware_external_cmd_selector
+    PATHS ${autoware_external_cmd_selector_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_EXTERNAL_CMD_SELECTOR)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_EXTERNAL_CMD_SELECTOR})
+endif()

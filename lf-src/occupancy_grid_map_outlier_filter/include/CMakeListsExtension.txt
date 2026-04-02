@@ -1,0 +1,66 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/universe/autoware_universe/perception/autoware_occupancy_grid_map_outlier_filter/src
+)
+
+find_package(autoware_occupancy_grid_map_outlier_filter REQUIRED)
+find_package(autoware_pointcloud_preprocessor REQUIRED)
+find_package(autoware_utils REQUIRED)
+find_package(message_filters REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(pcl_conversions REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_ros REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_occupancy_grid_map_outlier_filter
+    autoware_pointcloud_preprocessor
+    autoware_utils
+    message_filters
+    nav_msgs
+    pcl_conversions
+    pcl_ros
+    rclcpp
+    rclcpp_components
+    sensor_msgs
+    std_msgs
+    tf2_eigen
+    tf2_ros
+)
+
+find_library(LIB_OGM_OUTLIER_FILTER autoware_occupancy_grid_map_outlier_filter
+    PATHS ${autoware_occupancy_grid_map_outlier_filter_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_PP_FILTER_BASE pointcloud_preprocessor_filter_base
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+find_library(LIB_CONCATENATE_DATA concatenate_data
+    PATHS ${autoware_pointcloud_preprocessor_DIR}/../../../lib NO_DEFAULT_PATH)
+
+# Fix transitive dependency issues (PCL -> gdal -> netcdf -> curl)
+find_package(PCL REQUIRED COMPONENTS common io)
+find_package(CURL REQUIRED)
+
+# Link with --whole-archive to resolve all symbols from filter_base
+target_link_libraries(${LF_MAIN_TARGET} PUBLIC
+    ${LIB_OGM_OUTLIER_FILTER}
+    -Wl,--no-as-needed
+    ${LIB_PP_FILTER_BASE}
+    ${LIB_CONCATENATE_DATA}
+    ${LIB_PP_FILTER_BASE}
+    -Wl,--as-needed
+    ${PCL_LIBRARIES}
+    CURL::libcurl ncurses)

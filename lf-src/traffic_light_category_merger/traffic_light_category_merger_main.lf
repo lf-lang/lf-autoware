@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware TrafficLightCategoryMergerNode.
+ *
+ * Subscription-driven: merges traffic light classification results.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "traffic_light_category_merger_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor traffic_light_category_merger {
+    state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightCategoryMergerNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::TrafficLightCategoryMergerNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::TrafficLightCategoryMergerNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::TrafficLightCategoryMergerNode>(self->node)));
+    =}
+}
+
+main reactor {
+    tlcm = new traffic_light_category_merger();
+}

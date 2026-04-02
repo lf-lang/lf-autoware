@@ -1,0 +1,39 @@
+/**
+ * LF reactor wrapping the Autoware ApproximateDownsampleFilterComponent.
+ *
+ * Subscription-driven: approximate downsampling of pointcloud.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "autoware/pointcloud_preprocessor/downsample_filter/approximate_downsample_filter_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor approximate_downsample_filter {
+    state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::ApproximateDownsampleFilterComponent> =};
+
+    reaction (startup) {=
+        std::string home = get_lf_autoware_home();
+        std::string yaml_path = home + "/" + APPROXIMATE_DOWNSAMPLE_FILTER_PARAM;
+
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
+            yaml_path.c_str(), "/**");
+
+        self->node = std::make_shared<autoware::pointcloud_preprocessor::ApproximateDownsampleFilterComponent>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::pointcloud_preprocessor::ApproximateDownsampleFilterComponent>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::pointcloud_preprocessor::ApproximateDownsampleFilterComponent>(self->node)));
+    =}
+}
+
+main reactor {
+    adf = new approximate_downsample_filter();
+}

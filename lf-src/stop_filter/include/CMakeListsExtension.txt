@@ -1,0 +1,38 @@
+unset(BUILD_TESTING)
+set(LF_AUTOWARE_HOME $ENV{LF_AUTOWARE_HOME})
+message(STATUS "Using ${LF_AUTOWARE_HOME} as LF Autoware home directory")
+
+# Fix tinyxml2_vendor issue: pre-set TinyXML2 vars so vendor creates correct target
+set(TinyXML2_FOUND TRUE)
+set(TINYXML2_LIBRARY "/usr/lib/x86_64-linux-gnu/libtinyxml2.so")
+set(TINYXML2_INCLUDE_DIR "/usr/include")
+
+
+include_directories(
+    ${LF_AUTOWARE_HOME}/lf-src/lf-include
+    ${LF_AUTOWARE_HOME}/src/core/autoware_core/localization/autoware_stop_filter/src
+)
+
+find_package(autoware_stop_filter REQUIRED)
+find_package(autoware_internal_debug_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
+find_package(tf2 REQUIRED)
+
+ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
+    autoware_stop_filter
+    autoware_internal_debug_msgs
+    geometry_msgs
+    nav_msgs
+    rclcpp
+    rclcpp_components
+    tf2
+)
+
+find_library(LIB_STOP_FILTER autoware_stop_filter
+    PATHS ${autoware_stop_filter_DIR}/../../../lib NO_DEFAULT_PATH)
+if(LIB_STOP_FILTER)
+    target_link_libraries(${LF_MAIN_TARGET} PUBLIC ${LIB_STOP_FILTER})
+endif()

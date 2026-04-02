@@ -1,0 +1,36 @@
+/**
+ * LF reactor wrapping the Autoware TrafficLightSelectorNode.
+ *
+ * Subscription-driven: selects traffic light ROIs from multiple cameras.
+ */
+target CCpp {
+    cmake-include: "include/CMakeListsExtension.txt"
+};
+
+preamble {=
+    #include "traffic_light_selector_node.hpp"
+    #include "utils.hpp"
+    #include "constants.hpp"
+=}
+
+reactor traffic_light_selector {
+    state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightSelectorNode> =};
+
+    reaction (startup) {=
+        rclcpp::NodeOptions nodeOptions;
+        try { rclcpp::init(0, NULL); } catch (...) { }
+
+        self->node = std::make_shared<autoware::traffic_light::TrafficLightSelectorNode>(nodeOptions);
+
+        pthread_t spinner_thread;
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::traffic_light::TrafficLightSelectorNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::traffic_light::TrafficLightSelectorNode>(self->node)));
+    =}
+}
+
+main reactor {
+    tls = new traffic_light_selector();
+}
