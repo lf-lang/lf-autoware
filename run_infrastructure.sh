@@ -49,17 +49,13 @@ ros2 run autoware_map_tf_generator autoware_vector_map_tf_generator \
     -p viewer_frame:=viewer &
 pids[$i]=$!; i=$((i+1))
 
-# 2. robot_state_publisher: publishes vehicle URDF TF
-echo "  [vehicle] robot_state_publisher"
-XACRO_FILE="$LF_AUTOWARE_HOME/$( grep 'VEHICLE_XACRO_PATH' $LF_AUTOWARE_HOME/lf-src/lf-include/constants.hpp | head -1 | sed 's/.*= "//;s/".*//' )"
-if [ -f "$XACRO_FILE" ]; then
-    URDF=$(xacro "$XACRO_FILE" 2>/dev/null)
-    ros2 run robot_state_publisher robot_state_publisher \
-        --ros-args -p robot_description:="$URDF" &
-    pids[$i]=$!; i=$((i+1))
-else
-    echo "  WARNING: XACRO file not found: $XACRO_FILE"
-fi
+# 2. Vehicle description (robot_state_publisher + joint_state_publisher)
+echo "  [vehicle] robot_state_publisher via vehicle.launch.xml"
+ros2 launch tier4_vehicle_launch vehicle.launch.xml \
+    vehicle_model:=sample_vehicle \
+    sensor_model:=carla_sensor_kit \
+    launch_vehicle_interface:=false &
+pids[$i]=$!; i=$((i+1))
 
 # 3. RViz
 echo "  [viz] rviz2"
