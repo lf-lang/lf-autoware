@@ -15,7 +15,6 @@
 #   Terminal 3: bash lf-src/run_federation.sh
 #   Terminal 4: bash engage.sh + set goal in RViz
 
-set -e
 set -m
 
 unset CONDA_EXE CONDA_PREFIX CONDA_PROMPT_MODIFIER CONDA_SHLVL CONDA_PYTHON_EXE CONDA_DEFAULT_ENV _CE_CONDA
@@ -42,8 +41,8 @@ echo ""
 i=0
 
 # 1. map_tf_generator: subscribes to /vector_map, publishes map TF frame
-echo "  [map] vector_map_tf_generator"
-ros2 run autoware_map_tf_generator vector_map_tf_generator_node \
+echo "  [map] autoware_vector_map_tf_generator"
+ros2 run autoware_map_tf_generator autoware_vector_map_tf_generator \
     --ros-args \
     -r vector_map:=/vector_map \
     -p map_frame:=map \
