@@ -36,6 +36,7 @@ import lanelet2_map_loader from "lanelet2_map_loader/lanelet2_map_loader_main.lf
 
 // === Perception ===
 import ground_segmentation from "ground_segmentation/ground_segmentation_main.lf";
+// DISABLED: TensorRT compute mismatch
 import lidar_centerpoint from "lidar_centerpoint/lidar_centerpoint_main.lf";
 import euclidean_cluster from "euclidean_cluster/euclidean_cluster_main.lf";
 import pointcloud_map_filter from "pointcloud_map_filter/pointcloud_map_filter_main.lf";

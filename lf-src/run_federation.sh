@@ -49,7 +49,12 @@ for fed in cbf imu vvc rdf ptf vgof adf idec \
            bridge \
            mcso hsc dnc ptc plm csm; do
     echo "#### Launching federate__${fed}"
-    "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
+    if [ "$fed" = "lcp" ]; then
+        # lidar_centerpoint needs GPU 0 (RTX 3070) for TensorRT
+        CUDA_VISIBLE_DEVICES=0 "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
+    else
+        "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
+    fi
     pids[$i]=$!
     i=$((i+1))
     sleep 0.1  # Stagger launches to avoid RTI accept() overload
