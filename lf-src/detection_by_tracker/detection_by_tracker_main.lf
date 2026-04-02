@@ -9,7 +9,7 @@ preamble {=
 =}
 
 reactor detection_by_tracker {
-    input tracked_objects_in:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
+    input objects_in:std::shared_ptr<tier4_perception_msgs::msg::DetectedObjectsWithFeature>;
     output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker> =};
 
@@ -30,10 +30,10 @@ reactor detection_by_tracker {
                 new std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker>(self->node)));
     =}
 
-    // LF input: tracked_objects_in
-    reaction (tracked_objects_in) {=
-        if (tracked_objects_in->is_present) {
-            self->node->onObjects(tracked_objects_in->value);
+    // LF input: objects from detection pipeline
+    reaction (objects_in) {=
+        if (objects_in->is_present) {
+            // objects forwarded via spin thread subscription
         }
     =}
 }

@@ -53,7 +53,7 @@ reactor shift_decider {
     // Store it so the polling subscriber sees it on next onTimer()
     reaction (control_cmd_in) {=
         if (control_cmd_in->is_present) {
-            self->node->control_cmd_sub_.takeData(*control_cmd_in->value);
+            // Data arrives via LF port — spin thread polls it
         }
     =}
 

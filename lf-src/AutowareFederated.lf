@@ -238,16 +238,16 @@ federated reactor AutowareFederated {
 
     // === Perception pipeline: detection chain ===
     lcp.objects_out ~> ov.objects_in serializer "ros2";
-    ec.objects_out ~> clf.objects_in serializer "ros2";
+    // ec → clf: type mismatch (DetectedObjectsWithFeature vs DetectedObjects), via ROS
     ov.objects_out ~> of.objects_in serializer "ros2";
     of.objects_out ~> mot.objects_in serializer "ros2";
 
     // === Perception pipeline: tracking → prediction ===
     mot.tracked_objects_out ~> mbp.tracked_objects_in serializer "ros2";
-    mot.tracked_objects_out ~> dbt.tracked_objects_in serializer "ros2";
+    // mot → dbt: type mismatch, keep via ROS serializer "ros2";
 
     // === Traffic light chain ===
-    tlc.signals_out ~> tla.signals_in serializer "ros2";
+    // tlc → tla: type mismatch (TrafficLightArray vs TrafficLightGroupArray), via ROS
     tla.signals_out ~> ctle.signals_in serializer "ros2";
 
     // === Perception → Planning (predicted_objects) ===

@@ -80,18 +80,10 @@ reactor vehicle_cmd_gate {
         }
     =}
 
-    // LF input: gear command from shift_decider (replaces polling subscriber)
-    // Note: gear_cmd is polled by onTimer, so we store it for the next timer tick.
+    // LF input: gear command from shift_decider
     reaction (gear_cmd_in_from_sd) {=
-    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
-    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
         if (gear_cmd_in_from_sd->is_present) {
-    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
-    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
-            // Store in the node's auto_commands_ for the next onTimer() poll
             self->node->auto_commands_.gear = *gear_cmd_in_from_sd->value;
-    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
-    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
         }
     =}
 

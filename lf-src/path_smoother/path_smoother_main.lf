@@ -13,7 +13,7 @@ reactor path_smoother {
     // Input from behavior_velocity_planner
     input path_in:std::shared_ptr<autoware_planning_msgs::msg::Path>;
     // Output to path_optimizer (Path type, not Trajectory)
-    output path_out:std::shared_ptr<autoware_planning_msgs::msg::Path>;
+    output path_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 
     state node:{= std::shared_ptr<autoware::path_smoother::ElasticBandSmoother> =};
 
@@ -41,11 +41,11 @@ reactor path_smoother {
     reaction (path_in) -> path_out {=
         if (path_in->is_present) {
             self->node->onPath(path_in->value);
-            if (self->node->lf_path_is_set) {
-                auto msg = std::make_shared<autoware_planning_msgs::msg::Path>(
-                    self->node->lf_output_path);
+            if (self->node->lf_traj_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                    self->node->lf_output_traj);
                 lf_set(path_out, msg);
-                self->node->lf_path_is_set = false;
+                self->node->lf_traj_is_set = false;
             }
         }
     =}
