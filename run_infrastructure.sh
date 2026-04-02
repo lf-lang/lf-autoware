@@ -40,6 +40,15 @@ echo "=== Launching minimal infrastructure for LF federation ==="
 echo ""
 i=0
 
+# 0. map_projection_loader: publishes map projector info (needed by lanelet2_map_loader)
+echo "  [map] map_projection_loader"
+ros2 run autoware_map_projection_loader map_projection_loader \
+    --ros-args \
+    -p lanelet2_map_path:="$MAP_PATH/lanelet2_map.osm" \
+    --params-file "$LF_AUTOWARE_HOME/src/core/autoware_core/map/autoware_map_projection_loader/config/map_projection_loader.param.yaml" &
+pids[$i]=$!; i=$((i+1))
+sleep 1
+
 # 1. map_tf_generator: subscribes to /vector_map, publishes map TF frame
 echo "  [map] autoware_vector_map_tf_generator"
 ros2 run autoware_map_tf_generator autoware_vector_map_tf_generator \
