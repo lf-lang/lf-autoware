@@ -38,6 +38,16 @@ reactor collision_detector {
             // kinematic_state stored for timer poll
         }
     =}
+
+    // LF input: pointcloud
+    reaction (obstacle_pointcloud_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: objects
+    reaction (predicted_objects_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

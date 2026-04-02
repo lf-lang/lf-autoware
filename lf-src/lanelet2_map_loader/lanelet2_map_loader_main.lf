@@ -42,6 +42,16 @@ reactor lanelet2_map_loader {
             static_cast<void*>(
                 new std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode>(self->node)));
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> vector_map_out {=
+        if (self->node->lf_map_is_set) {
+            auto msg = std::make_shared<autoware_map_msgs::msg::LaneletMapBin>(self->node->lf_output_map);
+            lf_set(vector_map_out, msg);
+            self->node->lf_map_is_set = false;
+        }
+    =}
 }
 
 main reactor {

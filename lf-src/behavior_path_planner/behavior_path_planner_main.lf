@@ -115,6 +115,36 @@ reactor behavior_path_planner {
             self->node->lf_hazard_signal_is_set = false;
         }
     =}
+
+    // LF input: odometry for planning
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: acceleration for planning
+    reaction (acceleration_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: objects for planning
+    reaction (predicted_objects_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: lanelet map for planning
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: route for planning
+    reaction (route_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: occupancy grid for planning
+    reaction (occupancy_grid_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

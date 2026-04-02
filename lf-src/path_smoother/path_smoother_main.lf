@@ -49,6 +49,11 @@ reactor path_smoother {
             }
         }
     =}
+
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

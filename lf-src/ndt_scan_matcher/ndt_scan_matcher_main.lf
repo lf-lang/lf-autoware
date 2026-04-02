@@ -44,6 +44,16 @@ reactor ndt_scan_matcher {
             self->node->callback_sensor_points(pointcloud_in->value);
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> pose_out {=
+        if (self->node->lf_pose_is_set) {
+            auto msg = std::make_shared<geometry_msgs::msg::PoseWithCovarianceStamped>(self->node->lf_output_pose);
+            lf_set(pose_out, msg);
+            self->node->lf_pose_is_set = false;
+        }
+    =}
 }
 
 main reactor {

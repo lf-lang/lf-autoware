@@ -69,6 +69,16 @@ reactor multi_object_tracker {
             // objects fed via input_manager in spin thread
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> tracked_objects_out {=
+        if (self->node->lf_tracked_is_set) {
+            auto msg = std::make_shared<autoware_perception_msgs::msg::TrackedObjects>(self->node->lf_output_tracked);
+            lf_set(tracked_objects_out, msg);
+            self->node->lf_tracked_is_set = false;
+        }
+    =}
 }
 
 main reactor {

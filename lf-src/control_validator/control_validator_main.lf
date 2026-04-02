@@ -35,6 +35,11 @@ reactor control_validator {
             // kinematic_state stored for timer poll
         }
     =}
+
+    // LF input: trajectory
+    reaction (trajectory_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

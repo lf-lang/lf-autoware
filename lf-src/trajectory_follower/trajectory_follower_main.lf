@@ -86,6 +86,21 @@ reactor trajectory_follower {
             self->node->lf_control_cmd_is_set = false;
         }
     =}
+
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: acceleration
+    reaction (acceleration_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: trajectory from planning
+    reaction (traj_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

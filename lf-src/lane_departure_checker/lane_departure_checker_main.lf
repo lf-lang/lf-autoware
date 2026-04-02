@@ -40,6 +40,21 @@ reactor lane_departure_checker {
             // kinematic_state stored for timer poll
         }
     =}
+
+    // LF input: trajectory
+    reaction (trajectory_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: route
+    reaction (route_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: lanelet map
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

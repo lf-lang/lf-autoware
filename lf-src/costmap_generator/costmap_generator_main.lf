@@ -71,6 +71,21 @@ reactor costmap_generator {
             self->node->lf_occupancy_grid_is_set = false;
         }
     =}
+
+    // LF input: scenario
+    reaction (scenario_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: pointcloud
+    reaction (obstacle_pointcloud_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: lanelet map
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

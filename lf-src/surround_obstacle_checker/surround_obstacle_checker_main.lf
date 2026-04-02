@@ -39,6 +39,11 @@ reactor surround_obstacle_checker {
             // kinematic_state stored for timer poll
         }
     =}
+
+    // LF input: pointcloud
+    reaction (obstacle_pointcloud_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

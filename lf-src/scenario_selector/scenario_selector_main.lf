@@ -76,6 +76,26 @@ reactor scenario_selector {
             self->node->lf_scenario_is_set = false;
         }
     =}
+
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: route
+    reaction (route_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: lanelet map
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: trajectory from mvp
+    reaction (trajectory_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

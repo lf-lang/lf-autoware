@@ -95,6 +95,31 @@ reactor behavior_velocity_planner {
             }
         }
     =}
+
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: acceleration
+    reaction (acceleration_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: objects
+    reaction (predicted_objects_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: lanelet map
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: occupancy grid
+    reaction (occupancy_grid_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

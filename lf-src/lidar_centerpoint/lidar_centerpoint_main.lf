@@ -62,6 +62,16 @@ reactor lidar_centerpoint {
             // Data arrives via spin thread ROS subscription
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> objects_out {=
+        if (self->node->lf_detected_is_set) {
+            auto msg = std::make_shared<autoware_perception_msgs::msg::DetectedObjects>(self->node->lf_output_detected);
+            lf_set(objects_out, msg);
+            self->node->lf_detected_is_set = false;
+        }
+    =}
 }
 
 main reactor {

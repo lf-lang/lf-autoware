@@ -46,6 +46,16 @@ reactor ground_segmentation {
             // pointcloud processed via filter base class subscription
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> obstacle_pointcloud_out {=
+        if (self->node->lf_cloud_is_set) {
+            auto msg = std::make_shared<sensor_msgs::msg::PointCloud2>(self->node->lf_output_cloud);
+            lf_set(obstacle_pointcloud_out, msg);
+            self->node->lf_cloud_is_set = false;
+        }
+    =}
 }
 
 main reactor {

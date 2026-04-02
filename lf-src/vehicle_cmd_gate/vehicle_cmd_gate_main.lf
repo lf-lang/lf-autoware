@@ -122,6 +122,26 @@ reactor vehicle_cmd_gate {
         // Also call publishStatus
         self->node->publishStatus();
     =}
+
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: acceleration
+    reaction (acceleration_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: turn signals from bpp
+    reaction (turn_indicators_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
+
+    // LF input: hazard lights from bpp
+    reaction (hazard_lights_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

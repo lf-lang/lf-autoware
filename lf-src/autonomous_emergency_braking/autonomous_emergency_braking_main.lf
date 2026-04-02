@@ -37,6 +37,11 @@ reactor autonomous_emergency_braking {
             // pointcloud stored for timer poll
         }
     =}
+
+    // LF input: objects
+    reaction (predicted_objects_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

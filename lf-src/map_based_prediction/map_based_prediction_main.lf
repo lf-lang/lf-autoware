@@ -46,6 +46,21 @@ reactor map_based_prediction {
             self->node->objectsCallback(tracked_objects_in->value);
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> predicted_objects_out {=
+        if (self->node->lf_objects_is_set) {
+            auto msg = std::make_shared<autoware_perception_msgs::msg::PredictedObjects>(self->node->lf_output_objects);
+            lf_set(predicted_objects_out, msg);
+            self->node->lf_objects_is_set = false;
+        }
+    =}
+
+    // LF input: lanelet map
+    reaction (vector_map_in) {=
+        // Data delivered via LF connection at correct logical time
+    =}
 }
 
 main reactor {

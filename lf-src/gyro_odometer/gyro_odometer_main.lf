@@ -45,6 +45,16 @@ reactor gyro_odometer {
             self->node->callback_imu(imu_in->value);
         }
     =}
+
+    // Output polling: check if node produced output
+    timer output_poll(100 msec, 100 msec);
+    reaction (output_poll) -> twist_out {=
+        if (self->node->lf_twist_is_set) {
+            auto msg = std::make_shared<geometry_msgs::msg::TwistWithCovarianceStamped>(self->node->lf_output_twist);
+            lf_set(twist_out, msg);
+            self->node->lf_twist_is_set = false;
+        }
+    =}
 }
 
 main reactor {
