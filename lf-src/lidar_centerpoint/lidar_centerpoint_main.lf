@@ -15,6 +15,8 @@ preamble {=
 =}
 
 reactor lidar_centerpoint {
+    // Output: detected objects
+    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode> =};
 
     reaction (startup) {=

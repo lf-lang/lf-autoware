@@ -15,6 +15,10 @@ preamble {=
 =}
 
 reactor map_based_prediction {
+    // Input from multi_object_tracker
+    input tracked_objects_in:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
+    // Output to planning nodes
+    output predicted_objects_out:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
     state node:{= std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode> =};
 
     reaction (startup) {=

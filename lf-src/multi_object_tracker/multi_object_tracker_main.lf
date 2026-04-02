@@ -15,6 +15,10 @@ preamble {=
 =}
 
 reactor multi_object_tracker {
+    // Input from detection pipeline
+    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
+    // Output to map_based_prediction
+    output tracked_objects_out:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
     state node:{= std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker> =};
 
     reaction (startup) {=

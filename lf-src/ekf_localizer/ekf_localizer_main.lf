@@ -16,6 +16,8 @@ preamble {=
 =}
 
 reactor ekf_localizer {
+    // Output: fused kinematic state (consumed by many nodes)
+    output kinematic_state_out:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::ekf_localizer::EKFLocalizer> =};
 
     reaction (startup) {=
