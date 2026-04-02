@@ -20,6 +20,10 @@ preamble {=
 =}
 
 reactor trajectory_follower {
+    // Input from planning_validator (final trajectory)
+    input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
+    // Output to shift_decider and vehicle_cmd_gate
     output control_cmd:std::shared_ptr<autoware_control_msgs::msg::Control>;
 
     state node:autoware::motion::control::trajectory_follower_node::Controller*;

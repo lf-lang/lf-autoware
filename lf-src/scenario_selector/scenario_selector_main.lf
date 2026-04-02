@@ -20,6 +20,10 @@ preamble {=
 =}
 
 reactor scenario_selector {
+    // Input from motion_velocity_planner (lane driving trajectory)
+    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
+    // Outputs
     output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
     output scenario_out:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
 

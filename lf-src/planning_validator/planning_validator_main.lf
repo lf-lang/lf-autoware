@@ -9,6 +9,11 @@ preamble {=
 =}
 
 reactor planning_validator {
+    // Input from velocity_smoother
+    input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    // Output to trajectory_follower (final validated trajectory)
+    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
     state node:{= std::shared_ptr<autoware::planning_validator::PlanningValidatorNode> =};
 
     reaction (startup) {=
@@ -41,6 +46,18 @@ reactor planning_validator {
             &spin_node<std::shared_ptr<autoware::planning_validator::PlanningValidatorNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::planning_validator::PlanningValidatorNode>(self->node)));
+    =}
+
+    reaction (traj_in) -> traj_out {=
+        if (traj_in->is_present) {
+            self->node->onTrajectory(traj_in->value);
+            if (self->node->lf_traj_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                    self->node->lf_output_traj);
+                lf_set(traj_out, msg);
+                self->node->lf_traj_is_set = false;
+            }
+        }
     =}
 }
 

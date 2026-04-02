@@ -195,6 +195,35 @@ federated reactor AutowareFederated {
     // CARLA Interface — CCpp stub, ID 73
     ci = new carla_interface();
 
+    // === LF connections: Planning pipeline ===
+    // behavior_path_planner -> behavior_velocity_planner
+    bpp.path_out ~> bvp.path_in serializer "ros2";
+
+    // behavior_velocity_planner -> path_smoother
+    bvp.path_out ~> ps.path_in serializer "ros2";
+
+    // path_smoother -> path_optimizer
+    ps.path_out ~> po.path_in serializer "ros2";
+
+    // path_optimizer -> motion_velocity_planner
+    po.traj_out ~> mvp.traj_in serializer "ros2";
+
+    // motion_velocity_planner -> scenario_selector (lane driving trajectory)
+    mvp.traj_out ~> ss.trajectory_in serializer "ros2";
+
+    // freespace_planner -> scenario_selector (parking trajectory)
+    // fp.trajectory_out ~> ss.parking_trajectory_in serializer "ros2";
+
+    // scenario_selector -> velocity_smoother
+    ss.trajectory_out ~> vs.trajectory_in serializer "ros2";
+
+    // velocity_smoother -> planning_validator
+    vs.trajectory_out ~> pv.traj_in serializer "ros2";
+
+    // === LF connections: Planning → Control ===
+    // planning_validator -> trajectory_follower (final trajectory)
+    pv.traj_out ~> tf.traj_in serializer "ros2";
+
     // === LF connections: Control pipeline ===
     // trajectory_follower -> shift_decider (control_cmd for gear decision)
     tf.control_cmd ~> sd.control_cmd_in serializer "ros2";
@@ -210,7 +239,4 @@ federated reactor AutowareFederated {
     vcg.gear_cmd ~> bridge.gear_cmd_in serializer "ros2";
     vcg.turn_indicators_cmd ~> bridge.turn_indicators_cmd_in serializer "ros2";
     vcg.hazard_lights_cmd ~> bridge.hazard_lights_cmd_in serializer "ros2";
-
-    // === LF connections: Planning internal ===
-    ss.trajectory_out ~> vs.trajectory_in serializer "ros2";
 }

@@ -9,6 +9,11 @@ preamble {=
 =}
 
 reactor motion_velocity_planner {
+    // Input from path_optimizer
+    input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    // Output to scenario_selector (lane_driving trajectory)
+    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
     state node:{= std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode> =};
 
     reaction (startup) {=
@@ -55,6 +60,18 @@ reactor motion_velocity_planner {
             &spin_node<std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::motion_velocity_planner::MotionVelocityPlannerNode>(self->node)));
+    =}
+
+    reaction (traj_in) -> traj_out {=
+        if (traj_in->is_present) {
+            self->node->on_trajectory(traj_in->value);
+            if (self->node->lf_traj_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                    self->node->lf_output_traj);
+                lf_set(traj_out, msg);
+                self->node->lf_traj_is_set = false;
+            }
+        }
     =}
 }
 
