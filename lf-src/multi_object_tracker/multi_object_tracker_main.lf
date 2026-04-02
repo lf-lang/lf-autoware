@@ -62,6 +62,12 @@ reactor multi_object_tracker {
             static_cast<void*>(
                 new std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker>(self->node)));
     =}
+
+    // LF input: objects_in (forwarded via spin thread until C++ interception added)
+    reaction (objects_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

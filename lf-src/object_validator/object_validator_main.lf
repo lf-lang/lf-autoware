@@ -29,6 +29,12 @@ reactor object_validator {
             static_cast<void*>(
                 new std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>(self->node)));
     =}
+
+    // LF input: objects_in (forwarded via spin thread until C++ interception added)
+    reaction (objects_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

@@ -39,6 +39,13 @@ reactor map_based_prediction {
             static_cast<void*>(
                 new std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode>(self->node)));
     =}
+
+    // LF input: tracked_objects_in
+    reaction (tracked_objects_in) {=
+        if (tracked_objects_in->is_present) {
+            self->node->objectsCallback(tracked_objects_in->value);
+        }
+    =}
 }
 
 main reactor {

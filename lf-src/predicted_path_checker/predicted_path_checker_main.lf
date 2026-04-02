@@ -44,6 +44,12 @@ reactor predicted_path_checker {
     reaction (t) {=
         self->node->onTimer();
     =}
+
+    // LF input: predicted_objects_in (forwarded via spin thread until C++ interception added)
+    reaction (predicted_objects_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

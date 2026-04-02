@@ -43,6 +43,12 @@ reactor occupancy_grid_map {
             static_cast<void*>(
                 new std::shared_ptr<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode>(self->node)));
     =}
+
+    // LF input: obstacle_pointcloud_in (forwarded via spin thread until C++ interception added)
+    reaction (obstacle_pointcloud_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

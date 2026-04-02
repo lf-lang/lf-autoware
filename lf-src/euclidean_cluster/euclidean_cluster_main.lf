@@ -29,6 +29,13 @@ reactor euclidean_cluster {
             static_cast<void*>(
                 new std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>(self->node)));
     =}
+
+    // LF input: pointcloud_in
+    reaction (pointcloud_in) {=
+        if (pointcloud_in->is_present) {
+            self->node->onPointCloud(pointcloud_in->value);
+        }
+    =}
 }
 
 main reactor {

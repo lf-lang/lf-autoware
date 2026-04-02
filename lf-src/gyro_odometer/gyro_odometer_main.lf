@@ -38,6 +38,13 @@ reactor gyro_odometer {
             static_cast<void*>(
                 new std::shared_ptr<autoware::gyro_odometer::GyroOdometerNode>(self->node)));
     =}
+
+    // LF input: imu_in
+    reaction (imu_in) {=
+        if (imu_in->is_present) {
+            self->node->callback_imu(imu_in->value);
+        }
+    =}
 }
 
 main reactor {

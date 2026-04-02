@@ -33,6 +33,12 @@ reactor lane_departure_checker {
             static_cast<void*>(
                 new std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode>(self->node)));
     =}
+
+    // LF input: kinematic_state_in (forwarded via spin thread until C++ interception added)
+    reaction (kinematic_state_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

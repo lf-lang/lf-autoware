@@ -37,6 +37,13 @@ reactor ndt_scan_matcher {
             static_cast<void*>(
                 new std::shared_ptr<autoware::ndt_scan_matcher::NDTScanMatcher>(self->node)));
     =}
+
+    // LF input: pointcloud_in
+    reaction (pointcloud_in) {=
+        if (pointcloud_in->is_present) {
+            self->node->callback_sensor_points(pointcloud_in->value);
+        }
+    =}
 }
 
 main reactor {

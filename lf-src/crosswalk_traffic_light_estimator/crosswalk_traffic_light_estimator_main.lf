@@ -29,6 +29,12 @@ reactor crosswalk_traffic_light_estimator {
             static_cast<void*>(
                 new std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>(self->node)));
     =}
+
+    // LF input: signals_in (forwarded via spin thread until C++ interception added)
+    reaction (signals_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

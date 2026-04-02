@@ -38,6 +38,12 @@ reactor pointcloud_downsampling {
                 new std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent>(
                     self->node)));
     =}
+
+    // LF input: pointcloud_in (forwarded via spin thread until C++ interception added)
+    reaction (pointcloud_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {

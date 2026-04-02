@@ -54,6 +54,13 @@ reactor lidar_centerpoint {
             static_cast<void*>(
                 new std::shared_ptr<autoware::lidar_centerpoint::LidarCenterPointNode>(self->node)));
     =}
+
+    // LF input: pointcloud_in
+    reaction (pointcloud_in) {=
+        if (pointcloud_in->is_present) {
+            self->node->pointCloudCallback(pointcloud_in->value);
+        }
+    =}
 }
 
 main reactor {

@@ -29,6 +29,12 @@ reactor detection_by_tracker {
             static_cast<void*>(
                 new std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker>(self->node)));
     =}
+
+    // LF input: tracked_objects_in (forwarded via spin thread until C++ interception added)
+    reaction (tracked_objects_in) {=
+        // TODO: call node callback directly once C++ header is modified
+        // For now, the spin thread picks up data via ROS subscription
+    =}
 }
 
 main reactor {
