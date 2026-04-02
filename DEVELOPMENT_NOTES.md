@@ -234,6 +234,123 @@ bpp.path_out ~> bvp.path_in serializer "ros2";
 
 This uses `rclcpp::Serialization<MessageT>` to serialize/deserialize ROS messages over the LF network layer. This is necessary for federated execution where each federate is a separate process.
 
+## ROS Callback ↔ LF Runtime Boundary
+
+### Overview
+
+Each LF reactor wraps a ROS node. The boundary between ROS and LF has two directions:
+- **Output**: How does a ROS node's `publish()` become an LF port output?
+- **Input**: How does an LF port input reach a ROS node's subscription callback?
+
+### Pattern 1: Output Interception (ROS → LF)
+
+The ROS node's internal `publish()` call is intercepted. We modify the C++ source to also store the published data in a public `lf_output_*` field. The LF reaction checks this field after calling the node's processing method.
+
+**C++ header modification** (public section):
+```cpp
+autoware_control_msgs::msg::Control lf_output_control_cmd;
+bool lf_control_cmd_is_set = false;
+```
+
+**C++ source modification** (alongside existing publish):
+```cpp
+control_cmd_pub_->publish(msg);      // original ROS publish (still happens)
+lf_output_control_cmd = msg;         // LF interception: copy data
+lf_control_cmd_is_set = true;        // LF interception: set flag
+```
+
+**LF reaction** (checks flag after calling node method):
+```lf
+reaction (t) -> control_cmd {=
+    self->node->onTimer();
+    if (self->node->lf_control_cmd_is_set) {
+        auto msg = std::make_shared<...>(self->node->lf_output_control_cmd);
+        lf_set(control_cmd, msg);
+        self->node->lf_control_cmd_is_set = false;
+    }
+=}
+```
+
+**Best example:** `lf-src/vehicle_cmd_gate/vehicle_cmd_gate_main.lf` (lines 69-97) — timer-driven node with 4 output ports.
+
+**Note:** The ROS publish still happens (dual publishing). Data flows through both ROS topics AND LF connections simultaneously. The goal is to eventually remove the ROS publish, but this requires ensuring all downstream consumers use LF ports.
+
+### Pattern 2: Input Forwarding (LF → ROS)
+
+An LF input port triggers a reaction that calls the node's subscription callback directly, bypassing ROS subscription entirely.
+
+```lf
+reaction (auto_control_cmd_in) {=
+    if (auto_control_cmd_in->is_present) {
+        self->node->onAutoCtrlCmd(auto_control_cmd_in->value);
+    }
+=}
+```
+
+**Best example:** `lf-src/vehicle_cmd_gate/vehicle_cmd_gate_main.lf` (lines 74-78) — receives control command from trajectory_follower via LF port, calls the node's callback directly.
+
+**Requires:** The node's callback method must be `public` in the C++ header.
+
+### Pattern 3: Subscription-Driven with Output (Combined)
+
+For nodes that are triggered by incoming data (not timers), the reaction receives input via LF port, calls the callback, and checks for output:
+
+```lf
+reaction (path_in) -> path_out {=
+    if (path_in->is_present) {
+        self->node->onTrigger(path_in->value);      // call callback
+        if (self->node->lf_path_is_set) {            // check output
+            auto msg = std::make_shared<...>(self->node->lf_output_path);
+            lf_set(path_out, msg);                   // emit to LF
+            self->node->lf_path_is_set = false;
+        }
+    }
+=}
+```
+
+**Best example:** `lf-src/behavior_velocity_planner/behavior_velocity_planner_main.lf` — subscription-driven planning node.
+
+### How lf-avp-demo Does It (The Ideal)
+
+In lf-avp-demo, nodes were designed to store output in member variables instead of publishing. No `publish()` interception needed:
+
+```lf
+// From lf-avp-demo mpc_controller:
+reaction (vehicle_kinematic_state) -> command {=
+    self->node->on_state(vehicle_kinematic_state->value);
+    if (self->node->cmd_is_set) {
+        lf_set(command, make_shared<...>(self->node->cmd));
+        self->node->cmd_is_set = false;
+    }
+=}
+```
+
+The key difference: lf-avp-demo's Autoware (AutowareAuto) had simpler node classes where output member variables could be added cleanly. The current Autoware Universe has more complex node architectures with private publishers, requiring the `publish()` interception workaround.
+
+### Current Status vs. Ideal
+
+| Aspect | lf-avp-demo (ideal) | Current lf-autoware |
+|--------|---------------------|---------------------|
+| Output capture | Node stores in member var | Intercept `publish()` + `lf_output_*` field |
+| Input delivery | Reaction calls callback directly | ~15 direct, ~32 via spin thread stubs |
+| Spin thread | Only for TF | Most nodes still have spin thread |
+| ROS pub/sub | Fully replaced by LF | Coexists — both ROS and LF |
+| Dual publishing | No | Yes (data flows through both) |
+| Nodes fully converted | All ~15 | ~15 planning+control pipeline |
+| Nodes with stub reactions | 0 | ~32 (ports declared but data not intercepted) |
+
+### Path to Full lf-avp-demo Style
+
+To fully replicate the lf-avp-demo approach for all nodes:
+
+1. **For each node's output:** Add `lf_output_*` field + `lf_*_is_set` flag to C++ header, add interception alongside `publish()` in source, add LF reaction that checks flag after callback.
+
+2. **For each node's input:** Make callback method public, write LF reaction that calls it with `input->value`.
+
+3. **Remove spin thread** once all subscriptions are replaced by LF input ports (keep only for TF lookups and services).
+
+4. **Eventually remove ROS publish** once all downstream consumers use LF ports (eliminate dual publishing).
+
 ## Federation Bootstrap Issues (Mode D)
 
 ### Bootstrap Dependency Chain
