@@ -21,9 +21,15 @@ reactor lanelet2_map_loader {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + LANELET2_MAP_LOADER_PARAM;
+        std::string map_path = get_default_map_path();
+
+        // Resolve $(var lanelet2_map_path) substitution
+        std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
+            {"$(var lanelet2_map_path)", map_path + "/lanelet2_map.osm"}
+        });
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+            resolved_yaml.c_str(), "/**");
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::map_loader::Lanelet2MapLoaderNode>(nodeOptions);
