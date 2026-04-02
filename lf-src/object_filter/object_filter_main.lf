@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor object_filter {
+    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
+    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode> =};
 
     reaction (startup) {=

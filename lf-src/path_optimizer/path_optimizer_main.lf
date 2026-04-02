@@ -9,6 +9,7 @@ preamble {=
 =}
 
 reactor path_optimizer {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     input path_in:std::shared_ptr<autoware_planning_msgs::msg::Path>;
     output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 

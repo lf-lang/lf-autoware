@@ -9,6 +9,7 @@ preamble {=
 =}
 
 reactor external_velocity_limit_selector {
+    output velocity_limit_out:std::shared_ptr<autoware_planning_msgs::msg::VelocityLimit>;
     state node:{= std::shared_ptr<autoware::external_velocity_limit_selector::ExternalVelocityLimitSelectorNode> =};
 
     reaction (startup) {=

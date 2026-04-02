@@ -15,6 +15,8 @@ preamble {=
 =}
 
 reactor ndt_scan_matcher {
+    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
+    output pose_out:std::shared_ptr<geometry_msgs::msg::PoseWithCovarianceStamped>;
     state node:{= std::shared_ptr<autoware::ndt_scan_matcher::NDTScanMatcher> =};
 
     reaction (startup) {=

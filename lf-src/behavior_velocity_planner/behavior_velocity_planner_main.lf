@@ -9,6 +9,11 @@ preamble {=
 =}
 
 reactor behavior_velocity_planner {
+    input occupancy_grid_in:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
+    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
+    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
     // Input from behavior_path_planner
     input path_in:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
 

@@ -19,6 +19,9 @@ preamble {=
 =}
 
 reactor freespace_planner {
+    input scenario_in:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
+    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
     output is_completed:std::shared_ptr<bool>;
 

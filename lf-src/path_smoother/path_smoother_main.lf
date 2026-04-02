@@ -9,6 +9,7 @@ preamble {=
 =}
 
 reactor path_smoother {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     // Input from behavior_velocity_planner
     input path_in:std::shared_ptr<autoware_planning_msgs::msg::Path>;
     // Output to path_optimizer (Path type, not Trajectory)

@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor euclidean_cluster {
+    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
+    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode> =};
 
     reaction (startup) {=

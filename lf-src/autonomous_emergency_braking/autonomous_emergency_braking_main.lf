@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor autonomous_emergency_braking {
+    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
+    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
     state node:{= std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB> =};
 
     reaction (startup) {=

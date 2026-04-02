@@ -20,6 +20,12 @@ preamble {=
 =}
 
 reactor behavior_path_planner {
+    input occupancy_grid_in:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
+    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
+    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
+    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
     output path_out:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
     output turn_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
     output hazard_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;

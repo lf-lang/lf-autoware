@@ -23,6 +23,9 @@ preamble {=
 =}
 
 reactor costmap_generator {
+    input scenario_in:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
+    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
+    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
     output occupancy_grid_out:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
 
     state node:autoware::costmap_generator::CostmapGenerator*;

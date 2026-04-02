@@ -15,6 +15,7 @@ preamble {=
 =}
 
 reactor lanelet2_map_loader {
+    output vector_map_out:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
     state node:{= std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode> =};
 
     reaction (startup) {=

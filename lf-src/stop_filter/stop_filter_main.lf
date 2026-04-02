@@ -14,6 +14,7 @@ preamble {=
 =}
 
 reactor stop_filter {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::stop_filter::StopFilterNode> =};
 
     reaction (startup) {=

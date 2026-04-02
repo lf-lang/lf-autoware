@@ -9,6 +9,10 @@ preamble {=
 =}
 
 reactor operation_mode_transition_manager {
+    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
+    output operation_mode_out:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager> =};
 
     reaction (startup) {=

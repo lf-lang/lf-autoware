@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor surround_obstacle_checker {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode> =};
 
     reaction (startup) {=

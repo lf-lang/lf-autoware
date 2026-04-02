@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor detection_by_tracker {
+    input tracked_objects_in:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
+    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::detection_by_tracker::DetectionByTracker> =};
 
     reaction (startup) {=

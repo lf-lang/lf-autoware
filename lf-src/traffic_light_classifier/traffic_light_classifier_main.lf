@@ -9,6 +9,7 @@ preamble {=
 =}
 
 reactor traffic_light_classifier {
+    output signals_out:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
     state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightClassifierNodelet> =};
 
     reaction (startup) {=

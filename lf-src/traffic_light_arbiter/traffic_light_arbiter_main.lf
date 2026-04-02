@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor traffic_light_arbiter {
+    input signals_in:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
+    output signals_out:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
     state node:{= std::shared_ptr<autoware::traffic_light::TrafficLightArbiter> =};
 
     reaction (startup) {=

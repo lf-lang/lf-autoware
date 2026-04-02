@@ -20,6 +20,8 @@ preamble {=
 =}
 
 reactor trajectory_follower {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
     // Input from planning_validator (final trajectory)
     input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 

@@ -20,6 +20,9 @@ preamble {=
 =}
 
 reactor scenario_selector {
+    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
+    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     // Input from motion_velocity_planner (lane driving trajectory)
     input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 

@@ -14,6 +14,7 @@ preamble {=
 =}
 
 reactor predicted_path_checker {
+    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
     state node:autoware::predicted_path_checker::PredictedPathCheckerNode*;
     state node_shared_ptr:std::shared_ptr<autoware::predicted_path_checker::PredictedPathCheckerNode>;
 

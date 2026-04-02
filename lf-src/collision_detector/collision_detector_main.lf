@@ -9,6 +9,9 @@ preamble {=
 =}
 
 reactor collision_detector {
+    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
+    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::collision_detector::CollisionDetectorNode> =};
 
     reaction (startup) {=

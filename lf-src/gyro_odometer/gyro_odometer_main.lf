@@ -15,6 +15,7 @@ preamble {=
 =}
 
 reactor gyro_odometer {
+    input imu_in:std::shared_ptr<sensor_msgs::msg::Imu>;
     // Output: twist estimate
     output twist_out:std::shared_ptr<geometry_msgs::msg::TwistWithCovarianceStamped>;
     state node:{= std::shared_ptr<autoware::gyro_odometer::GyroOdometerNode> =};

@@ -195,55 +195,123 @@ federated reactor AutowareFederated {
     // CARLA Interface — CCpp stub, ID 73
     ci = new carla_interface();
 
-    // === LF connections: Perception pipeline ===
-    // lidar_centerpoint -> multi_object_tracker (detected objects)
-    lcp.objects_out ~> mot.objects_in serializer "ros2";
+    // ================================================================
+    // LF CONNECTIONS — Full Autoware dataflow graph
+    // ================================================================
 
-    // multi_object_tracker -> map_based_prediction (tracked objects)
+    // === Sensing → Localization/Perception ===
+    imu.imu_out ~> gyro.imu_in serializer "ros2";
+    cbf.pointcloud_out ~> gs.pointcloud_in serializer "ros2";
+
+    // === Localization chain ===
+    gyro.twist_out ~> ekf.twist_in serializer "ros2";
+    ndt.pose_out ~> ekf.pose_in serializer "ros2";
+
+    // === Localization → many consumers (kinematic_state) ===
+    ekf.kinematic_state_out ~> sf.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> tf.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> vcg.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> bpp.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> bvp.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> ps.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> po.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> mvp.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> ss.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> fp.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> vs.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> omtm.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> ldc.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> cd.kinematic_state_in serializer "ros2";
+
+    // === Sensing → Perception ===
+    gs.obstacle_pointcloud_out ~> ogm.obstacle_pointcloud_in serializer "ros2";
+    gs.obstacle_pointcloud_out ~> cg.obstacle_pointcloud_in serializer "ros2";
+    gs.obstacle_pointcloud_out ~> aeb.obstacle_pointcloud_in serializer "ros2";
+    gs.obstacle_pointcloud_out ~> cd.obstacle_pointcloud_in serializer "ros2";
+    gs.obstacle_pointcloud_out ~> soc.obstacle_pointcloud_in serializer "ros2";
+    cbf.pointcloud_out ~> lcp.pointcloud_in serializer "ros2";
+    cbf.pointcloud_out ~> ec.pointcloud_in serializer "ros2";
+    cbf.pointcloud_out ~> pmf.pointcloud_in serializer "ros2";
+
+    // === Sensing → Localization (pointcloud for NDT, via ROS for now) ===
+    // cbf → pointcloud_downsampling → ndt: downsampling not in federation yet
+
+    // === Perception pipeline: detection chain ===
+    lcp.objects_out ~> ov.objects_in serializer "ros2";
+    ec.objects_out ~> clf.objects_in serializer "ros2";
+    ov.objects_out ~> of.objects_in serializer "ros2";
+    of.objects_out ~> mot.objects_in serializer "ros2";
+
+    // === Perception pipeline: tracking → prediction ===
     mot.tracked_objects_out ~> mbp.tracked_objects_in serializer "ros2";
+    mot.tracked_objects_out ~> dbt.tracked_objects_in serializer "ros2";
 
-    // === LF connections: Planning pipeline ===
-    // behavior_path_planner -> behavior_velocity_planner
+    // === Traffic light chain ===
+    tlc.signals_out ~> tla.signals_in serializer "ros2";
+    tla.signals_out ~> ctle.signals_in serializer "ros2";
+
+    // === Perception → Planning (predicted_objects) ===
+    mbp.predicted_objects_out ~> bpp.predicted_objects_in serializer "ros2";
+    mbp.predicted_objects_out ~> bvp.predicted_objects_in serializer "ros2";
+    mbp.predicted_objects_out ~> mvp.predicted_objects_in serializer "ros2";
+    mbp.predicted_objects_out ~> cd.predicted_objects_in serializer "ros2";
+    mbp.predicted_objects_out ~> aeb.predicted_objects_in serializer "ros2";
+    mbp.predicted_objects_out ~> ppc.predicted_objects_in serializer "ros2";
+
+    // === Perception → Planning (occupancy_grid) ===
+    ogm.occupancy_grid_out ~> bpp.occupancy_grid_in serializer "ros2";
+    ogm.occupancy_grid_out ~> bvp.occupancy_grid_in serializer "ros2";
+    ogm.occupancy_grid_out ~> mvp.occupancy_grid_in serializer "ros2";
+
+    // === Map → consumers ===
+    l2m.vector_map_out ~> bpp.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> bvp.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> mvp.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> ss.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> mbp.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> ldc.vector_map_in serializer "ros2";
+    l2m.vector_map_out ~> cg.vector_map_in serializer "ros2";
+
+    // === Mission planner → consumers ===
+    mp.route_out ~> bpp.route_in serializer "ros2";
+    mp.route_out ~> ss.route_in serializer "ros2";
+    mp.route_out ~> fp.route_in serializer "ros2";
+    mp.route_out ~> ldc.route_in serializer "ros2";
+
+    // === Planning pipeline ===
     bpp.path_out ~> bvp.path_in serializer "ros2";
-
-    // behavior_velocity_planner -> path_smoother
+    bpp.turn_signal_out ~> vcg.turn_indicators_in serializer "ros2";
+    bpp.hazard_signal_out ~> vcg.hazard_lights_in serializer "ros2";
     bvp.path_out ~> ps.path_in serializer "ros2";
-
-    // path_smoother -> path_optimizer
     ps.path_out ~> po.path_in serializer "ros2";
-
-    // path_optimizer -> motion_velocity_planner
     po.traj_out ~> mvp.traj_in serializer "ros2";
-
-    // motion_velocity_planner -> scenario_selector (lane driving trajectory)
     mvp.traj_out ~> ss.trajectory_in serializer "ros2";
-
-    // freespace_planner -> scenario_selector (parking trajectory)
-    // fp.trajectory_out ~> ss.parking_trajectory_in serializer "ros2";
-
-    // scenario_selector -> velocity_smoother
     ss.trajectory_out ~> vs.trajectory_in serializer "ros2";
-
-    // velocity_smoother -> planning_validator
+    ss.scenario_out ~> cg.scenario_in serializer "ros2";
+    ss.scenario_out ~> fp.scenario_in serializer "ros2";
     vs.trajectory_out ~> pv.traj_in serializer "ros2";
 
-    // === LF connections: Planning → Control ===
-    // planning_validator -> trajectory_follower (final trajectory)
+    // === Parking pipeline ===
+    // costmap_generator occupancy_grid feeds into freespace_planner
+    // (freespace_planner receives costmap via its own subscription, not kinematic_state)
+
+    // === Planning → Control ===
     pv.traj_out ~> tf.traj_in serializer "ros2";
+    pv.traj_out ~> ldc.trajectory_in serializer "ros2";
+    pv.traj_out ~> omtm.trajectory_in serializer "ros2";
 
-    // === LF connections: Control pipeline ===
-    // trajectory_follower -> shift_decider (control_cmd for gear decision)
+    // === Control pipeline ===
     tf.control_cmd ~> sd.control_cmd_in serializer "ros2";
-
-    // trajectory_follower -> vehicle_cmd_gate (auto control command)
     tf.control_cmd ~> vcg.auto_control_cmd_in serializer "ros2";
-
-    // shift_decider -> vehicle_cmd_gate (gear command)
+    tf.control_cmd ~> omtm.control_cmd_in serializer "ros2";
     sd.gear_cmd ~> vcg.gear_cmd_in_from_sd serializer "ros2";
-
-    // vehicle_cmd_gate -> bridge_interface (final commands to CARLA)
     vcg.control_cmd ~> bridge.control_cmd_in serializer "ros2";
     vcg.gear_cmd ~> bridge.gear_cmd_in serializer "ros2";
     vcg.turn_indicators_cmd ~> bridge.turn_indicators_cmd_in serializer "ros2";
     vcg.hazard_lights_cmd ~> bridge.hazard_lights_cmd_in serializer "ros2";
+
+    // === Control safety connections ===
+    pv.traj_out ~> cv.trajectory_in serializer "ros2";
+    ekf.kinematic_state_out ~> cv.kinematic_state_in serializer "ros2";
+    ekf.kinematic_state_out ~> soc.kinematic_state_in serializer "ros2";
 }

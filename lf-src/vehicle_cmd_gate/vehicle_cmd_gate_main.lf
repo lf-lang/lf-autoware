@@ -19,9 +19,13 @@ preamble {=
 =}
 
 reactor vehicle_cmd_gate {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
     // Inputs from other LF control nodes
     input auto_control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
     input gear_cmd_in_from_sd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
+    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
 
     // Outputs to bridge_interface
     output control_cmd:std::shared_ptr<autoware_control_msgs::msg::Control>;
@@ -79,9 +83,15 @@ reactor vehicle_cmd_gate {
     // LF input: gear command from shift_decider (replaces polling subscriber)
     // Note: gear_cmd is polled by onTimer, so we store it for the next timer tick.
     reaction (gear_cmd_in_from_sd) {=
+    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
         if (gear_cmd_in_from_sd->is_present) {
+    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
             // Store in the node's auto_commands_ for the next onTimer() poll
             self->node->auto_commands_.gear = *gear_cmd_in_from_sd->value;
+    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
+    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
         }
     =}
 

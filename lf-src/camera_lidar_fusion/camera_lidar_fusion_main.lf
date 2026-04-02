@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor camera_lidar_fusion {
+    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
+    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode> =};
 
     reaction (startup) {=

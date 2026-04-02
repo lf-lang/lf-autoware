@@ -15,6 +15,7 @@ preamble {=
 =}
 
 reactor imu_corrector {
+    output imu_out:std::shared_ptr<sensor_msgs::msg::Imu>;
     state node:{= std::shared_ptr<autoware::imu_corrector::ImuCorrector> =};
 
     reaction (startup) {=

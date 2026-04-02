@@ -15,6 +15,7 @@ preamble {=
 =}
 
 reactor crop_box_filter {
+    output pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::crop_box_filter::CropBoxFilter> =};
 
     reaction (startup) {=

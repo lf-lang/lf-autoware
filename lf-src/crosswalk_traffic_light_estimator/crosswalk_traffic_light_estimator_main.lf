@@ -9,6 +9,8 @@ preamble {=
 =}
 
 reactor crosswalk_traffic_light_estimator {
+    input signals_in:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
+    output signals_out:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
     state node:{= std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode> =};
 
     reaction (startup) {=

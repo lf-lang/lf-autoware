@@ -15,6 +15,8 @@ preamble {=
 =}
 
 reactor occupancy_grid_map {
+    output occupancy_grid_out:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
+    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::occupancy_grid_map::PointcloudBasedOccupancyGridMapNode> =};
 
     reaction (startup) {=

@@ -15,6 +15,7 @@ preamble {=
 =}
 
 reactor map_based_prediction {
+    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
     // Input from multi_object_tracker
     input tracked_objects_in:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
     // Output to planning nodes

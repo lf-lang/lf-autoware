@@ -17,6 +17,8 @@ preamble {=
 =}
 
 reactor velocity_smoother {
+    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
+    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
     input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
     output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 
