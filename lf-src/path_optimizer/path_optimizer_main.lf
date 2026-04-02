@@ -9,6 +9,9 @@ preamble {=
 =}
 
 reactor path_optimizer {
+    input path_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
+
     state node:{= std::shared_ptr<autoware::path_optimizer::PathOptimizer> =};
 
     reaction (startup) {=
@@ -29,6 +32,30 @@ reactor path_optimizer {
             &spin_node<std::shared_ptr<autoware::path_optimizer::PathOptimizer>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::path_optimizer::PathOptimizer>(self->node)));
+    =}
+
+    reaction (path_in) -> traj_out {=
+        if (path_in->is_present) {
+            // path_optimizer expects Path, but receives Trajectory from path_smoother
+            // Convert: extract path from trajectory
+            auto path = std::make_shared<autoware_planning_msgs::msg::Path>();
+            path->header = path_in->value->header;
+            for (const auto& pt : path_in->value->points) {
+                autoware_planning_msgs::msg::PathPoint pp;
+                pp.pose = pt.pose;
+                pp.longitudinal_velocity_mps = pt.longitudinal_velocity_mps;
+                pp.lateral_velocity_mps = pt.lateral_velocity_mps;
+                pp.heading_rate_rps = pt.heading_rate_rps;
+                path->points.push_back(pp);
+            }
+            self->node->onPath(path);
+            if (self->node->lf_traj_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                    self->node->lf_output_traj);
+                lf_set(traj_out, msg);
+                self->node->lf_traj_is_set = false;
+            }
+        }
     =}
 }
 

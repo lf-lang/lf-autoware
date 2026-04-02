@@ -9,6 +9,12 @@ preamble {=
 =}
 
 reactor behavior_velocity_planner {
+    // Input from behavior_path_planner
+    input path_in:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
+
+    // Output to path_smoother
+    output path_out:std::shared_ptr<autoware_planning_msgs::msg::Path>;
+
     state node:{= std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode> =};
 
     reaction (startup) {=
@@ -69,6 +75,20 @@ reactor behavior_velocity_planner {
             &spin_node<std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>(self->node)));
+    =}
+
+    // LF input: path from behavior_path_planner (replaces ROS subscription)
+    reaction (path_in) -> path_out {=
+        if (path_in->is_present) {
+            self->node->onTrigger(path_in->value);
+
+            if (self->node->lf_path_is_set) {
+                auto msg = std::make_shared<autoware_planning_msgs::msg::Path>(
+                    self->node->lf_output_path);
+                lf_set(path_out, msg);
+                self->node->lf_path_is_set = false;
+            }
+        }
     =}
 }
 
