@@ -32,6 +32,7 @@ import stop_filter from "stop_filter/stop_filter_main.lf";
 // === Map ===
 import pointcloud_map_loader from "pointcloud_map_loader/pointcloud_map_loader_main.lf";
 import lanelet2_map_loader from "lanelet2_map_loader/lanelet2_map_loader_main.lf";
+import map_projection_loader from "map_projection_loader/map_projection_loader_main.lf";
 // map_tf_generator: DEFERRED (inline class in .cpp)
 
 // === Perception ===
@@ -126,6 +127,7 @@ federated reactor AutowareFederated {
     // Map (IDs 15-17)
     pcm = new pointcloud_map_loader();
     l2m = new lanelet2_map_loader();
+    mpl = new map_projection_loader();
     // mtg = new map_tf_generator();  // DEFERRED
 
     // Perception (IDs 18-39)

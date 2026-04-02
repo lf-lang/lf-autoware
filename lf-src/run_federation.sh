@@ -32,7 +32,7 @@ BIN_DIR="$LF_AUTOWARE_HOME/fed-gen/AutowareFederated/bin"
 CARLA_FED_DIR="$LF_AUTOWARE_HOME/src-gen/lf-src/carla_interface/federate__ci"
 
 echo "#### Launching RTI"
-"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 71 &
+"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 72 &
 RTI=$!
 sleep 2
 
@@ -41,7 +41,7 @@ i=0
 # 73 CCpp federates (IDs 0-72)
 for fed in cbf imu vvc rdf ptf vgof adf idec \
            ndt gyro ekf lem pid sf \
-           pcm l2m \
+           pcm l2m mpl \
            gs lcp ec pmf dbt ov of clf mot mbp ogm tlmbd tlc tla tlop ctle \
            tls tlcm som ors ogmof \
            mp bpp bvp ps po mvp soc ss vs fp cg pv evls pg psa \
