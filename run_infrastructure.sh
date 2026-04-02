@@ -42,7 +42,7 @@ i=0
 
 # 0. map_projection_loader: publishes map projector info (needed by lanelet2_map_loader)
 echo "  [map] map_projection_loader"
-ros2 run autoware_map_projection_loader map_projection_loader \
+ros2 run autoware_map_projection_loader autoware_map_projection_loader_node \
     --ros-args \
     -p lanelet2_map_path:="$MAP_PATH/lanelet2_map.osm" \
     --params-file "$LF_AUTOWARE_HOME/src/core/autoware_core/map/autoware_map_projection_loader/config/map_projection_loader.param.yaml" &
