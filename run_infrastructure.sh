@@ -64,7 +64,7 @@ fi
 
 # 3. RViz
 echo "  [viz] rviz2"
-rviz2 &
+rviz2 -d "$LF_AUTOWARE_HOME/src/launcher/autoware_launch/autoware_launch/rviz/autoware.rviz" &
 pids[$i]=$!; i=$((i+1))
 
 echo ""
