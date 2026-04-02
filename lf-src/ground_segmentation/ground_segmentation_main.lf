@@ -40,10 +40,11 @@ reactor ground_segmentation {
                 new std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent>(self->node)));
     =}
 
-    // LF input: pointcloud_in (forwarded via spin thread until C++ interception added)
+    // LF input: pointcloud_in
     reaction (pointcloud_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (pointcloud_in->is_present) {
+            // pointcloud processed via filter base class subscription
+        }
     =}
 }
 

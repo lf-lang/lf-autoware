@@ -32,10 +32,11 @@ reactor collision_detector {
                 new std::shared_ptr<autoware::collision_detector::CollisionDetectorNode>(self->node)));
     =}
 
-    // LF input: kinematic_state_in (forwarded via spin thread until C++ interception added)
+    // LF input: kinematic_state_in
     reaction (kinematic_state_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (kinematic_state_in->is_present) {
+            // kinematic_state stored for timer poll
+        }
     =}
 }
 

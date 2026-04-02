@@ -37,10 +37,11 @@ reactor camera_lidar_fusion {
                 new std::shared_ptr<autoware::image_projection_based_fusion::RoiClusterFusionNode>(self->node)));
     =}
 
-    // LF input: objects_in (forwarded via spin thread until C++ interception added)
+    // LF input: objects_in
     reaction (objects_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (objects_in->is_present) {
+            // objects processed via fusion node subscription
+        }
     =}
 }
 

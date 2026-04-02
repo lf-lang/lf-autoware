@@ -34,10 +34,11 @@ reactor stop_filter {
                 new std::shared_ptr<autoware::stop_filter::StopFilterNode>(self->node)));
     =}
 
-    // LF input: kinematic_state_in (forwarded via spin thread until C++ interception added)
+    // LF input: kinematic_state_in
     reaction (kinematic_state_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (kinematic_state_in->is_present) {
+            self->node->callback_odometry(kinematic_state_in->value);
+        }
     =}
 }
 

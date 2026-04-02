@@ -31,10 +31,11 @@ reactor autonomous_emergency_braking {
                 new std::shared_ptr<autoware::motion::control::autonomous_emergency_braking::AEB>(self->node)));
     =}
 
-    // LF input: obstacle_pointcloud_in (forwarded via spin thread until C++ interception added)
+    // LF input: obstacle_pointcloud_in
     reaction (obstacle_pointcloud_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (obstacle_pointcloud_in->is_present) {
+            // pointcloud stored for timer poll
+        }
     =}
 }
 

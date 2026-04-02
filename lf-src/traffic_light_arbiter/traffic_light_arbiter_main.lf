@@ -30,10 +30,11 @@ reactor traffic_light_arbiter {
                 new std::shared_ptr<autoware::traffic_light::TrafficLightArbiter>(self->node)));
     =}
 
-    // LF input: signals_in (forwarded via spin thread until C++ interception added)
+    // LF input: signals_in
     reaction (signals_in) {=
-        // TODO: call node callback directly once C++ header is modified
-        // For now, the spin thread picks up data via ROS subscription
+        if (signals_in->is_present) {
+            self->node->onPerceptionMsg(signals_in->value);
+        }
     =}
 }
 
