@@ -16,6 +16,10 @@ preamble {=
 =}
 
 reactor shift_decider {
+    // Input from trajectory_follower (replaces InterProcessPollingSubscriber)
+    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
+
+    // Output to vehicle_cmd_gate
     output gear_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
 
     state node:autoware::shift_decider::ShiftDecider*;
@@ -43,6 +47,14 @@ reactor shift_decider {
             static_cast<void*>(
                 new std::shared_ptr<autoware::shift_decider::ShiftDecider>(
                     self->node_shared_ptr)));
+    =}
+
+    // LF input: control command from trajectory_follower
+    // Store it so the polling subscriber sees it on next onTimer()
+    reaction (control_cmd_in) {=
+        if (control_cmd_in->is_present) {
+            self->node->control_cmd_sub_.takeData(*control_cmd_in->value);
+        }
     =}
 
     // Timer at 100ms matching the node's 10Hz rate

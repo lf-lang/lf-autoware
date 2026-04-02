@@ -19,6 +19,11 @@ preamble {=
 =}
 
 reactor vehicle_cmd_gate {
+    // Inputs from other LF control nodes
+    input auto_control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
+    input gear_cmd_in_from_sd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
+
+    // Outputs to bridge_interface
     output control_cmd:std::shared_ptr<autoware_control_msgs::msg::Control>;
     output gear_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
     output turn_indicators_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
@@ -62,6 +67,22 @@ reactor vehicle_cmd_gate {
             static_cast<void*>(
                 new std::shared_ptr<autoware::vehicle_cmd_gate::VehicleCmdGate>(
                     self->node_shared_ptr)));
+    =}
+
+    // LF input: control command from trajectory_follower (replaces ROS subscription)
+    reaction (auto_control_cmd_in) {=
+        if (auto_control_cmd_in->is_present) {
+            self->node->onAutoCtrlCmd(auto_control_cmd_in->value);
+        }
+    =}
+
+    // LF input: gear command from shift_decider (replaces polling subscriber)
+    // Note: gear_cmd is polled by onTimer, so we store it for the next timer tick.
+    reaction (gear_cmd_in_from_sd) {=
+        if (gear_cmd_in_from_sd->is_present) {
+            // Store in the node's auto_commands_ for the next onTimer() poll
+            self->node->auto_commands_.gear = *gear_cmd_in_from_sd->value;
+        }
     =}
 
     // Timer matching the node's update_rate (typically 10-20Hz)
