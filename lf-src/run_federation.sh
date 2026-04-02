@@ -1,7 +1,13 @@
-#!/bin/bash -l
-# Launcher for federated AutowareFederated.lf (47 federates: 46 CCpp + 1 Python CARLA)
+#!/bin/bash
+# Launcher for federated AutowareFederated.lf (72 federates: 71 CCpp + 1 Python CARLA)
 set -m
 shopt -s huponexit
+
+# Clean conda from environment to avoid numpy/library conflicts
+unset CONDA_EXE CONDA_PREFIX CONDA_PROMPT_MODIFIER CONDA_SHLVL CONDA_PYTHON_EXE CONDA_DEFAULT_ENV _CE_CONDA
+export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+export PYTHONPATH=$(echo $PYTHONPATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 
 cleanup() {
     printf "Killing federates: %s\n" "${pids[*]}"
