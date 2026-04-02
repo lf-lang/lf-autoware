@@ -51,7 +51,8 @@ import traffic_light_classifier from "traffic_light_classifier/traffic_light_cla
 import traffic_light_arbiter from "traffic_light_arbiter/traffic_light_arbiter_main.lf";
 import traffic_light_occlusion_predictor from "traffic_light_occlusion_predictor/traffic_light_occlusion_predictor_main.lf";
 import crosswalk_traffic_light_estimator from "crosswalk_traffic_light_estimator/crosswalk_traffic_light_estimator_main.lf";
-import tensorrt_yolox from "tensorrt_yolox/tensorrt_yolox_main.lf";
+// DISABLED: TensorRT compute mismatch (engine 8.6, GPU 6.1)
+// import tensorrt_yolox from "tensorrt_yolox/tensorrt_yolox_main.lf";
 import traffic_light_selector from "traffic_light_selector/traffic_light_selector_main.lf";
 import traffic_light_category_merger from "traffic_light_category_merger/traffic_light_category_merger_main.lf";
 import simple_object_merger from "simple_object_merger/simple_object_merger_main.lf";
@@ -144,7 +145,7 @@ federated reactor AutowareFederated {
     tla = new traffic_light_arbiter();
     tlop = new traffic_light_occlusion_predictor();
     ctle = new crosswalk_traffic_light_estimator();
-    yolox = new tensorrt_yolox();
+    // yolox = new tensorrt_yolox();  // DISABLED: TensorRT compute mismatch
     tls = new traffic_light_selector();
     tlcm = new traffic_light_category_merger();
     som = new simple_object_merger();
