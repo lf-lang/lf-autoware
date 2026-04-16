@@ -11,25 +11,41 @@
  */
 target CCpp {
     cmake-include: "include/CMakeListsExtension.txt"
-};
+}
 
 preamble {=
     #include "autoware/trajectory_follower_node/controller_node.hpp"
+    #include <autoware_adapi_v1_msgs/msg/operation_mode_state.hpp>
+    #include <autoware_control_msgs/msg/control.hpp>
+    #include <autoware_planning_msgs/msg/trajectory.hpp>
+    #include <autoware_vehicle_msgs/msg/steering_report.hpp>
+    #include <geometry_msgs/msg/accel_with_covariance_stamped.hpp>
+    #include <nav_msgs/msg/odometry.hpp>
+    #include <tf2_ros/static_transform_broadcaster.h>
+    #include <cmath>
     #include "utils.hpp"
     #include "constants.hpp"
+
+    extern "C" void lf_request_stop(void);
 =}
 
 reactor trajectory_follower {
     input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
+    input steering_in:std::shared_ptr<autoware_vehicle_msgs::msg::SteeringReport>;
+    input operation_mode_in:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>;
     // Input from planning_validator (final trajectory)
     input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 
     // Output to shift_decider and vehicle_cmd_gate
     output control_cmd:std::shared_ptr<autoware_control_msgs::msg::Control>;
 
+    // Keep reactor state to raw pointers / POD types. LF allocates reactor
+    // self structs as raw memory, so non-trivial C++ objects are unsafe here.
     state node:autoware::motion::control::trajectory_follower_node::Controller*;
-    state node_shared_ptr:std::shared_ptr<autoware::motion::control::trajectory_follower_node::Controller>;
+    state static_tf_broadcaster:tf2_ros::StaticTransformBroadcaster*;
+    state spinner_thread:{= pthread_t =}
+    state spinner_started:bool = false
 
     reaction (startup) {=
         // Load parameters
@@ -55,25 +71,70 @@ reactor trajectory_follower {
             rclcpp::Parameter("longitudinal_controller_mode", "pid"));
 
         self->node = new autoware::motion::control::trajectory_follower_node::Controller(nodeOptions);
+        self->static_tf_broadcaster =
+            new tf2_ros::StaticTransformBroadcaster(self->node);
 
         // Cancel the internal ROS2 timer (we use LF timer instead)
         self->node->timer_control_->cancel();
 
-        self->node_shared_ptr = std::shared_ptr<
-            autoware::motion::control::trajectory_follower_node::Controller>(self->node);
-
-        // Start spin thread for InterProcessPollingSubscribers and TF
-        pthread_t spinner_thread;
+        // Start spin thread for InterProcessPollingSubscribers and TF.
+        // Use a no-op deleter so the thread-side shared_ptr wrapper does not
+        // own self->node; the reactor frees it in shutdown.
         pthread_create(
-            &spinner_thread, NULL,
+            &self->spinner_thread, NULL,
             &spin_node<std::shared_ptr<autoware::motion::control::trajectory_follower_node::Controller>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::motion::control::trajectory_follower_node::Controller>(
-                    self->node_shared_ptr)));
+                    self->node,
+                    [](autoware::motion::control::trajectory_follower_node::Controller*) {})));
+        self->spinner_started = true;
+
+        // Match the upstream controller tests by publishing a static
+        // map->base_link transform before the first control tick.
+        geometry_msgs::msg::TransformStamped transform;
+        transform.header.stamp = self->node->now();
+        transform.header.frame_id = "map";
+        transform.child_frame_id = "base_link";
+        transform.transform.translation.x = 0.0;
+        transform.transform.translation.y = 0.0;
+        transform.transform.translation.z = 0.0;
+        transform.transform.rotation.w = 1.0;
+        self->static_tf_broadcaster->sendTransform(transform);
     =}
 
-    // Timer at 30ms (matching typical ctrl_period of ~30ms / 33Hz)
-    timer t(0, 30 msec);
+    // LF input: odometry
+    reaction (kinematic_state_in) {=
+        if (kinematic_state_in->is_present) {
+            self->node->onOdometry(kinematic_state_in->value);
+        }
+    =}
+
+    reaction (acceleration_in) {=
+        if (acceleration_in->is_present) {
+            self->node->onAccel(acceleration_in->value);
+        }
+    =}
+
+    reaction (steering_in) {=
+        if (steering_in->is_present) {
+            self->node->onSteering(steering_in->value);
+        }
+    =}
+
+    reaction (operation_mode_in) {=
+        if (operation_mode_in->is_present) {
+            self->node->onOperationMode(operation_mode_in->value);
+        }
+    =}
+
+    reaction (traj_in) {=
+        if (traj_in->is_present) {
+            self->node->onTrajectory(traj_in->value);
+        }
+    =}
+
+    // Start the control tick after the first synthetic input tag.
+    timer t(200 msec, 30 msec);
     reaction (t) -> control_cmd {=
         // Call the node's timer callback
         self->node->callbackTimerControl();
@@ -87,22 +148,168 @@ reactor trajectory_follower {
         }
     =}
 
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
+    reaction (shutdown) {=
+        // Shut ROS down before process exit and join the spin thread so Fast
+        // DDS teardown does not race with a still-running executor thread.
+        if (rclcpp::ok()) {
+            rclcpp::shutdown();
+        }
+
+        if (self->spinner_started) {
+            pthread_join(self->spinner_thread, NULL);
+            self->spinner_started = false;
+        }
+
+        delete self->node;
+        self->node = nullptr;
+
+        delete self->static_tf_broadcaster;
+        self->static_tf_broadcaster = nullptr;
+    =}
+}
+
+reactor TrajectoryFollowerTestSource {
+    output kinematic_state_out:std::shared_ptr<nav_msgs::msg::Odometry>
+    output acceleration_out:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>
+    output steering_out:std::shared_ptr<autoware_vehicle_msgs::msg::SteeringReport>
+    output operation_mode_out:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>
+    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>
+
+    timer send_inputs(1 msec)
+
+    reaction(send_inputs) -> kinematic_state_out, acceleration_out, steering_out, operation_mode_out, traj_out {=
+        lf_print("TrajectoryFollowerTestSource: sending synthetic inputs");
+
+        auto odom = std::make_shared<nav_msgs::msg::Odometry>();
+        odom->header.stamp = rclcpp::Clock().now();
+        odom->header.frame_id = "map";
+        odom->twist.twist.linear.x = 1.0;
+        lf_set(kinematic_state_out, odom);
+
+        auto accel = std::make_shared<geometry_msgs::msg::AccelWithCovarianceStamped>();
+        accel->header.stamp = odom->header.stamp;
+        accel->header.frame_id = "base_link";
+        accel->accel.accel.linear.x = 0.0;
+        lf_set(acceleration_out, accel);
+
+        auto steering = std::make_shared<autoware_vehicle_msgs::msg::SteeringReport>();
+        steering->stamp = odom->header.stamp;
+        steering->steering_tire_angle = 0.0;
+        lf_set(steering_out, steering);
+
+        auto op_mode = std::make_shared<autoware_adapi_v1_msgs::msg::OperationModeState>();
+        op_mode->stamp = odom->header.stamp;
+        op_mode->mode = autoware_adapi_v1_msgs::msg::OperationModeState::AUTONOMOUS;
+        op_mode->is_autoware_control_enabled = true;
+        lf_set(operation_mode_out, op_mode);
+
+        auto traj = std::make_shared<autoware_planning_msgs::msg::Trajectory>();
+        traj->header.stamp = odom->header.stamp;
+        traj->header.frame_id = "map";
+
+        autoware_planning_msgs::msg::TrajectoryPoint p0;
+        p0.pose.position.x = -1.0;
+        p0.pose.position.y = 0.0;
+        p0.longitudinal_velocity_mps = 1.0f;
+        traj->points.push_back(p0);
+
+        autoware_planning_msgs::msg::TrajectoryPoint p1;
+        p1.pose.position.x = 0.0;
+        p1.pose.position.y = 0.0;
+        p1.longitudinal_velocity_mps = 1.0f;
+        traj->points.push_back(p1);
+
+        autoware_planning_msgs::msg::TrajectoryPoint p2;
+        p2.pose.position.x = 1.0;
+        p2.pose.position.y = 0.0;
+        p2.longitudinal_velocity_mps = 1.0f;
+        traj->points.push_back(p2);
+
+        autoware_planning_msgs::msg::TrajectoryPoint p3;
+        p3.pose.position.x = 2.0;
+        p3.pose.position.y = 0.0;
+        p3.longitudinal_velocity_mps = 1.0f;
+        traj->points.push_back(p3);
+
+        lf_set(traj_out, traj);
+    =}
+}
+
+reactor TrajectoryFollowerChecker {
+    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>
+
+    state seen:int = 0
+    state failed:bool = false
+    state bad_steering:double = 0.0
+    state bad_velocity:double = 0.0
+
+    reaction(control_cmd_in) {=
+        if (!control_cmd_in->is_present) {
+            return;
+        }
+
+        self->seen += 1;
+        lf_print(
+            "TrajectoryFollowerChecker: observed control_cmd vel=%.3f steer=%.6f",
+            control_cmd_in->value->longitudinal.velocity,
+            control_cmd_in->value->lateral.steering_tire_angle);
+
+        const double steering = control_cmd_in->value->lateral.steering_tire_angle;
+        const double velocity = control_cmd_in->value->longitudinal.velocity;
+
+        if (std::abs(steering) > 1e-6 || velocity <= 0.0) {
+            self->failed = true;
+            self->bad_steering = steering;
+            self->bad_velocity = velocity;
+            lf_request_stop();
+            return;
+        }
+
+        lf_request_stop();
     =}
 
-    // LF input: acceleration
-    reaction (acceleration_in) {=
-        // Data delivered via LF connection at correct logical time
+    reaction(shutdown) {=
+        if (self->failed) {
+            lf_print_error_and_exit(
+                "trajectory_follower test failed: expected near-zero steering and positive velocity, got steer=%.6f vel=%.3f",
+                self->bad_steering, self->bad_velocity);
+        }
+        if (self->seen != 1) {
+            lf_print_error_and_exit(
+                "trajectory_follower test failed: expected exactly one control command, saw %d",
+                self->seen);
+        }
+    =}
+}
+
+reactor TrajectoryFollowerTimeout {
+    state timed_out:bool = false
+    timer timeout(500 msec)
+
+    reaction(timeout) {=
+        lf_print("TrajectoryFollowerTimeout: timeout reached");
+        self->timed_out = true;
+        lf_request_stop();
     =}
 
-    // LF input: trajectory from planning
-    reaction (traj_in) {=
-        // Data delivered via LF connection at correct logical time
+    reaction(shutdown) {=
+        if (self->timed_out) {
+            lf_print_error_and_exit(
+                "trajectory_follower test timed out before a valid control command was observed.");
+        }
     =}
 }
 
 main reactor {
-    tf = new trajectory_follower();
+    src = new TrajectoryFollowerTestSource()
+    tf = new trajectory_follower()
+    check = new TrajectoryFollowerChecker()
+    timeout_guard = new TrajectoryFollowerTimeout()
+
+    src.kinematic_state_out -> tf.kinematic_state_in
+    src.acceleration_out -> tf.acceleration_in
+    src.steering_out -> tf.steering_in
+    src.operation_mode_out -> tf.operation_mode_in
+    src.traj_out -> tf.traj_in
+    tf.control_cmd -> check.control_cmd_in
 }

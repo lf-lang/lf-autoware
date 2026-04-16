@@ -8,6 +8,7 @@ include_directories(
 
 find_package(autoware_trajectory_follower_node REQUIRED)
 find_package(autoware_control_msgs REQUIRED)
+find_package(autoware_adapi_v1_msgs REQUIRED)
 find_package(autoware_planning_msgs REQUIRED)
 find_package(autoware_vehicle_msgs REQUIRED)
 find_package(autoware_vehicle_info_utils REQUIRED)
@@ -25,6 +26,7 @@ include_directories(
 ament_target_dependencies(${LF_MAIN_TARGET} PUBLIC
     autoware_trajectory_follower_node
     autoware_control_msgs
+    autoware_adapi_v1_msgs
     autoware_planning_msgs
     autoware_vehicle_msgs
     autoware_vehicle_info_utils
