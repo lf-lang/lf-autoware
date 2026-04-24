@@ -9,9 +9,6 @@ preamble {=
 =}
 
 reactor collision_detector {
-    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::collision_detector::CollisionDetectorNode> =};
 
     reaction (startup) {=
@@ -30,23 +27,6 @@ reactor collision_detector {
             &spin_node<std::shared_ptr<autoware::collision_detector::CollisionDetectorNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::collision_detector::CollisionDetectorNode>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            // kinematic_state stored for timer poll
-        }
-    =}
-
-    // LF input: pointcloud
-    reaction (obstacle_pointcloud_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: objects
-    reaction (predicted_objects_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

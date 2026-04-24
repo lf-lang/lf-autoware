@@ -9,10 +9,6 @@ preamble {=
 =}
 
 reactor path_optimizer {
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input path_in:std::shared_ptr<autoware_planning_msgs::msg::Path>;
-    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-
     state node:{= std::shared_ptr<autoware::path_optimizer::PathOptimizer> =};
 
     reaction (startup) {=
@@ -33,23 +29,6 @@ reactor path_optimizer {
             &spin_node<std::shared_ptr<autoware::path_optimizer::PathOptimizer>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::path_optimizer::PathOptimizer>(self->node)));
-    =}
-
-    reaction (path_in) -> traj_out {=
-        if (path_in->is_present) {
-            self->node->onPath(path_in->value);
-            if (self->node->lf_traj_is_set) {
-                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                    self->node->lf_output_traj);
-                lf_set(traj_out, msg);
-                self->node->lf_traj_is_set = false;
-            }
-        }
-    =}
-
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

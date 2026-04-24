@@ -15,10 +15,6 @@ preamble {=
 =}
 
 reactor multi_object_tracker {
-    // Input from detection pipeline
-    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
-    // Output to map_based_prediction
-    output tracked_objects_out:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
     state node:{= std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker> =};
 
     reaction (startup) {=
@@ -61,23 +57,6 @@ reactor multi_object_tracker {
             &spin_node<std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::multi_object_tracker::MultiObjectTracker>(self->node)));
-    =}
-
-    // LF input: objects_in
-    reaction (objects_in) {=
-        if (objects_in->is_present) {
-            // objects fed via input_manager in spin thread
-        }
-    =}
-
-    // Output polling: check if node produced output
-    timer output_poll(100 msec, 100 msec);
-    reaction (output_poll) -> tracked_objects_out {=
-        if (self->node->lf_tracked_is_set) {
-            auto msg = std::make_shared<autoware_perception_msgs::msg::TrackedObjects>(self->node->lf_output_tracked);
-            lf_set(tracked_objects_out, msg);
-            self->node->lf_tracked_is_set = false;
-        }
     =}
 }
 

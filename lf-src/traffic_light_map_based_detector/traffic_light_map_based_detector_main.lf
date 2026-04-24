@@ -9,7 +9,6 @@ preamble {=
 =}
 
 reactor traffic_light_map_based_detector {
-    output rois_out:std::shared_ptr<tier4_perception_msgs::msg::TrafficLightRoiArray>;
     state node:{= std::shared_ptr<autoware::traffic_light::MapBasedDetector> =};
 
     reaction (startup) {=

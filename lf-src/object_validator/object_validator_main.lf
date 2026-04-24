@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor object_validator {
-    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
-    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator> =};
 
     reaction (startup) {=
@@ -28,13 +26,6 @@ reactor object_validator {
             &spin_node<std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::detected_object_validation::obstacle_pointcloud::ObstaclePointCloudBasedValidator>(self->node)));
-    =}
-
-    // LF input: objects_in
-    reaction (objects_in) {=
-        if (objects_in->is_present) {
-            // objects processed via message_filters subscription
-        }
     =}
 }
 

@@ -19,12 +19,6 @@ preamble {=
 =}
 
 reactor freespace_planner {
-    input scenario_in:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
-    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    output is_completed:std::shared_ptr<bool>;
-
     state node:autoware::freespace_planner::FreespacePlannerNode*;
     state node_shared_ptr:std::shared_ptr<autoware::freespace_planner::FreespacePlannerNode>;
 
@@ -56,37 +50,12 @@ reactor freespace_planner {
                     self->node_shared_ptr)));
     =}
 
-    // Timer at 100ms (matching default update_rate of 10Hz)
+    // Timer at 100ms (matching default update_rate of 10Hz).
+    // LF drives onTimer() because we cancelled the node's internal ROS timer above.
+    // Outputs stay on ROS — this reactor has no LF ports.
     timer t(0, 100 msec);
-    reaction (t) -> trajectory_out, is_completed {=
+    reaction (t) {=
         self->node->onTimer();
-
-        if (self->node->lf_trajectory_is_set) {
-            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                self->node->lf_output_trajectory);
-            lf_set(trajectory_out, msg);
-            self->node->lf_trajectory_is_set = false;
-        }
-        if (self->node->lf_is_completed_is_set) {
-            auto val = std::make_shared<bool>(self->node->lf_is_completed);
-            lf_set(is_completed, val);
-            self->node->lf_is_completed_is_set = false;
-        }
-    =}
-
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: route
-    reaction (route_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: scenario
-    reaction (scenario_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

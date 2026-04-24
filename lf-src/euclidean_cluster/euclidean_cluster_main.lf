@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor euclidean_cluster {
-    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    output objects_out:std::shared_ptr<tier4_perception_msgs::msg::DetectedObjectsWithFeature>;
     state node:{= std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode> =};
 
     reaction (startup) {=
@@ -28,13 +26,6 @@ reactor euclidean_cluster {
             &spin_node<std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::euclidean_cluster::VoxelGridBasedEuclideanClusterNode>(self->node)));
-    =}
-
-    // LF input: pointcloud_in
-    reaction (pointcloud_in) {=
-        if (pointcloud_in->is_present) {
-            self->node->onPointCloud(pointcloud_in->value);
-        }
     =}
 }
 

@@ -20,16 +20,6 @@ preamble {=
 =}
 
 reactor scenario_selector {
-    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    // Input from motion_velocity_planner (lane driving trajectory)
-    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-
-    // Outputs
-    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    output scenario_out:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
-
     state node:autoware::scenario_selector::ScenarioSelectorNode*;
     state node_shared_ptr:std::shared_ptr<autoware::scenario_selector::ScenarioSelectorNode>;
 
@@ -58,43 +48,12 @@ reactor scenario_selector {
                     self->node_shared_ptr)));
     =}
 
-    // Timer at 100ms (10Hz, matching default update_rate)
+    // Timer at 100ms (10Hz, matching default update_rate).
+    // LF drives onTimer() because we cancelled the node's internal ROS timer above.
+    // Outputs stay on ROS — this reactor has no LF ports.
     timer t(0, 100 msec);
-    reaction (t) -> trajectory_out, scenario_out {=
+    reaction (t) {=
         self->node->onTimer();
-
-        if (self->node->lf_trajectory_is_set) {
-            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                self->node->lf_output_trajectory);
-            lf_set(trajectory_out, msg);
-            self->node->lf_trajectory_is_set = false;
-        }
-        if (self->node->lf_scenario_is_set) {
-            auto msg = std::make_shared<autoware_internal_planning_msgs::msg::Scenario>(
-                self->node->lf_output_scenario);
-            lf_set(scenario_out, msg);
-            self->node->lf_scenario_is_set = false;
-        }
-    =}
-
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: route
-    reaction (route_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: lanelet map
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: trajectory from mvp
-    reaction (trajectory_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

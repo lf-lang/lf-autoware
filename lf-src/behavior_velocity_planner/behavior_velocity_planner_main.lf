@@ -9,17 +9,6 @@ preamble {=
 =}
 
 reactor behavior_velocity_planner {
-    input occupancy_grid_in:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
-    // Input from behavior_path_planner
-    input path_in:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
-
-    // Output to path_smoother
-    output path_out:std::shared_ptr<autoware_planning_msgs::msg::Path>;
-
     state node:{= std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode> =};
 
     reaction (startup) {=
@@ -80,45 +69,6 @@ reactor behavior_velocity_planner {
             &spin_node<std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::behavior_velocity_planner::BehaviorVelocityPlannerNode>(self->node)));
-    =}
-
-    // LF input: path from behavior_path_planner (replaces ROS subscription)
-    reaction (path_in) -> path_out {=
-        if (path_in->is_present) {
-            self->node->onTrigger(path_in->value);
-
-            if (self->node->lf_path_is_set) {
-                auto msg = std::make_shared<autoware_planning_msgs::msg::Path>(
-                    self->node->lf_output_path);
-                lf_set(path_out, msg);
-                self->node->lf_path_is_set = false;
-            }
-        }
-    =}
-
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: acceleration
-    reaction (acceleration_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: objects
-    reaction (predicted_objects_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: lanelet map
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: occupancy grid
-    reaction (occupancy_grid_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

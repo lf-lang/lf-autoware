@@ -9,10 +9,6 @@ preamble {=
 =}
 
 reactor lane_departure_checker {
-    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode> =};
 
     reaction (startup) {=
@@ -32,28 +28,6 @@ reactor lane_departure_checker {
             &spin_node<std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::lane_departure_checker::LaneDepartureCheckerNode>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            // kinematic_state stored for timer poll
-        }
-    =}
-
-    // LF input: trajectory
-    reaction (trajectory_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: route
-    reaction (route_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: lanelet map
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

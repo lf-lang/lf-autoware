@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor crosswalk_traffic_light_estimator {
-    input signals_in:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
-    output signals_out:std::shared_ptr<autoware_perception_msgs::msg::TrafficLightGroupArray>;
     state node:{= std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode> =};
 
     reaction (startup) {=
@@ -28,13 +26,6 @@ reactor crosswalk_traffic_light_estimator {
             &spin_node<std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::crosswalk_traffic_light_estimator::CrosswalkTrafficLightEstimatorNode>(self->node)));
-    =}
-
-    // LF input: signals_in
-    reaction (signals_in) {=
-        if (signals_in->is_present) {
-            // signals forwarded via spin thread
-        }
     =}
 }
 

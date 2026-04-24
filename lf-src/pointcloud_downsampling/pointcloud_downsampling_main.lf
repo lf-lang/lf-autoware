@@ -15,8 +15,6 @@ preamble {=
 =}
 
 reactor pointcloud_downsampling {
-    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    output pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent> =};
 
     reaction (startup) {=
@@ -37,13 +35,6 @@ reactor pointcloud_downsampling {
             static_cast<void*>(
                 new std::shared_ptr<autoware::pointcloud_preprocessor::VoxelGridDownsampleFilterComponent>(
                     self->node)));
-    =}
-
-    // LF input: pointcloud_in
-    reaction (pointcloud_in) {=
-        if (pointcloud_in->is_present) {
-            // pointcloud processed via filter base class
-        }
     =}
 }
 

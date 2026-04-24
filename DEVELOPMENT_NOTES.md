@@ -6,30 +6,50 @@ Technical findings, workarounds, and design decisions encountered during the por
 
 ### Parallel Federation Builds
 
-`lfc` builds federates sequentially — a full 72-federate build takes ~2 hours. **Workaround: generate scaffold first, then build in parallel with cmake:**
+`lfc` builds federates sequentially — a full 72-federate build takes ~2 hours. **Workaround: generate scaffold first, then build in parallel with cmake.** This cuts build time to ~30–40 minutes (linking dominates; Autoware has massive dependency trees).
+
+#### Using `lf-src/parallel_build.sh` (preferred)
 
 ```bash
-# Step 1: Generate scaffold only (fast, ~30 seconds)
-lfc --no-compile lf-src/AutowareFederated.lf
+# Step 1: generate scaffold only (~3 min; runs sequentially inside lfc)
+source /opt/ros/humble/setup.bash && source install/setup.bash
+export LF_AUTOWARE_HOME="$PWD"
+lfc-dev --no-compile lf-src/AutowareFederated.lf
 
-# Step 2: Build all federates in parallel (4 at a time)
+# Step 2: build all federates in parallel with live progress
+bash lf-src/parallel_build.sh
+```
+
+The script sources ROS + Autoware install, strips conda from `PATH`/`LD_LIBRARY_PATH` (avoids the numpy/libstdc++ conflicts documented below), and fans out `cmake ... && cmake --build ... --target install` across all `fed-gen/AutowareFederated/src-gen/federate__*/` directories.
+
+**Output:** each federate's cmake/g++ output is streamed to stdout tagged with `[<short_name>]` and mirrored to `logs/parallel_build/<federate__name>.log`. `>>>>` markers separate state changes (`OK`/`FAIL`/`SKIP`/`progress`); grep for `^>>>>` to see just the summary.
+
+**Flags and tunables:**
+- `bash lf-src/parallel_build.sh` — resume mode (default). Skips federates with an existing `.ok` marker. `.fail` markers are wiped so failed federates retry.
+- `bash lf-src/parallel_build.sh --clean` — wipe all markers + logs, force full rebuild.
+- `P=8 J=2 bash lf-src/parallel_build.sh` — override parallelism. Defaults: `P=10` concurrent federates, `J=2` threads per federate (→ ~20 active threads on an 8-CPU box; oversubscription is fine because each federate spends most of its time linking on 1 thread). Dial `P` down if you see swap pressure — peak RSS during link is ~1–2 GB per federate.
+- Killed mid-build? cmake keeps object files in each `fed-gen/.../federate__*/build/`, so the resume pays only for the unfinished steps (usually just the final link, ~1 min).
+
+#### Raw one-liner equivalent
+
+If you don't want the script (e.g. tweaking flags ad-hoc):
+
+```bash
 ls fed-gen/AutowareFederated/src-gen/federate__*/ | xargs -P4 -I{} bash -c '
   cd {} && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_INSTALL_PREFIX=.../fed-gen/AutowareFederated \
+    -DCMAKE_INSTALL_PREFIX=$LF_AUTOWARE_HOME/fed-gen/AutowareFederated \
     -DCMAKE_INSTALL_BINDIR=bin > /dev/null 2>&1
   cmake --build build --target install --parallel 8 > /dev/null 2>&1
 '
 ```
 
-This cuts build time from ~2 hours to ~30-40 minutes. Each federate still takes ~1.5 minutes to link (Autoware has massive dependency trees), but 4 concurrent builds saturate the CPU.
-
-**When is a full rebuild needed?**
+#### When is a full rebuild (`--clean`) needed?
 - Adding/removing federates from `AutowareFederated.lf` (changes `NUMBER_OF_FEDERATES` in every binary)
 - Changing LF port connections (changes generated network sender/receiver code)
 
-**Incremental builds** (fast, seconds):
-- Fixing a single node's CMakeListsExtension.txt → re-cmake that one federate
-- Changing a .lf reaction body → `lfc --no-compile` to regenerate, then rebuild that federate
+#### Incremental builds (fast, seconds)
+- Fixing a single node's `CMakeListsExtension.txt` → re-cmake that one federate (or just re-run `parallel_build.sh` — cmake figures it out)
+- Changing a `.lf` reaction body → `lfc-dev --no-compile lf-src/AutowareFederated.lf` to regenerate, then `parallel_build.sh` (resumes → only affected federates rebuild)
 
 ### TinyXML2 Vendor Issue
 
@@ -69,6 +89,40 @@ target_link_libraries(${LF_MAIN_TARGET} PUBLIC
 ### Autoware Source Files Not Tracked by Git
 
 The `src/` directory has its own `.gitignore` that ignores everything. Autoware source is managed separately (via `vcs import`). All C++ header modifications (making `timer_`/callbacks public) are **local changes** that persist across builds but aren't version-controlled in this repo. The `.lf` files and `CMakeListsExtension.txt` files in `lf-src/` are tracked.
+
+### Rebuild One Autoware Package
+
+When an LF wrapper depends on newly added methods in an Autoware package, rebuilding only that package is usually enough.
+
+Example for `autoware_shift_decider`:
+
+```bash
+source /opt/ros/humble/setup.bash
+colcon build \
+  --packages-select autoware_shift_decider \
+  --symlink-install \
+  --cmake-args -DCMAKE_BUILD_TYPE=Debug
+source install/setup.bash
+```
+
+If you need to force a clean rebuild of just that package:
+
+```bash
+rm -rf build/autoware_shift_decider install/autoware_shift_decider log/latest_build/autoware_shift_decider
+source /opt/ros/humble/setup.bash
+colcon build \
+  --packages-select autoware_shift_decider \
+  --symlink-install \
+  --cmake-args -DCMAKE_BUILD_TYPE=Debug
+source install/setup.bash
+```
+
+Then rebuild the LF binary against the refreshed package:
+
+```bash
+export LF_AUTOWARE_HOME="$PWD"
+lfc-dev lf-src/shift_decider/shift_decider_main.lf
+```
 
 ## Mixed-Target Federation: Python CARLA Federate
 

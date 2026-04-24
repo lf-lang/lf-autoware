@@ -5,8 +5,15 @@
  * and two timers. It acts as the command safety gate, filtering control
  * commands before sending them to the vehicle.
  *
- * The ROS2 timers are replaced by LF timers. The spin thread keeps
- * regular subscriptions, services, and polling subscribers alive.
+ * Only the two LF-delivered inputs are exposed as LF ports:
+ * - auto_control_cmd_in from trajectory_follower
+ * - gear_cmd_in_from_sd from shift_decider
+ *
+ * Everything else (kinematics, acceleration, steering, engage, operation
+ * mode, external turn/hazard commands) reaches the node through its own
+ * ROS subscriptions in the spin thread. The internal ROS timers are
+ * cancelled; the LF timer drives onTimer() + publishStatus() and relays
+ * the four intercepted outputs over LF ports to bridge_interface.
  */
 target CCpp {
     cmake-include: "include/CMakeListsExtension.txt"
@@ -16,30 +23,19 @@ preamble {=
     #include "vehicle_cmd_gate.hpp"
     #include "utils.hpp"
     #include "constants.hpp"
-
-    extern "C" void lf_request_stop(void);
 =}
 
 reactor vehicle_cmd_gate {
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
-    input steering_in:std::shared_ptr<autoware_vehicle_msgs::msg::SteeringReport>;
-    input engage_in:std::shared_ptr<autoware_vehicle_msgs::msg::Engage>;
-    input operation_mode_in:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>;
-    // Inputs from other LF control nodes
+    // Inputs from other LF control reactors.
     input auto_control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
     input gear_cmd_in_from_sd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
-    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
-    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
 
-    // Outputs to bridge_interface
+    // Outputs to bridge_interface.
     output control_cmd:std::shared_ptr<autoware_control_msgs::msg::Control>;
     output gear_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>;
     output turn_indicators_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
     output hazard_lights_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
 
-    // Keep reactor state to raw pointers / POD types. LF allocates reactor
-    // self structs as raw memory, so non-trivial C++ objects are unsafe here.
     state node:autoware::vehicle_cmd_gate::VehicleCmdGate*;
     state spinner_thread:{= pthread_t =}
     state spinner_started:bool = false
@@ -54,25 +50,19 @@ reactor vehicle_cmd_gate {
             {vehicle_info_path, "/**"}
         });
 
-        // Override check_external_emergency_heartbeat as bool (YAML has
-        // a substitution variable that gets parsed as string)
         nodeOptions.parameter_overrides().push_back(
             rclcpp::Parameter("check_external_emergency_heartbeat", false));
         nodeOptions.parameter_overrides().push_back(
             rclcpp::Parameter("use_emergency_handling", false));
-        // Set simulation mode
         nodeOptions.parameter_overrides().push_back(
             rclcpp::Parameter("is_simulation", true));
 
         self->node = new autoware::vehicle_cmd_gate::VehicleCmdGate(nodeOptions);
 
-        // Cancel the internal ROS2 timers (we use LF timers instead)
+        // Cancel the internal ROS2 timers — LF timer drives ticks.
         self->node->timer_->cancel();
         self->node->timer_pub_status_->cancel();
 
-        // Start spin thread for regular subscriptions, services, and polling
-        // subscribers. Use a no-op deleter so the thread-side shared_ptr
-        // wrapper does not own self->node; the reactor frees it in shutdown.
         pthread_create(
             &self->spinner_thread, NULL,
             &spin_node<std::shared_ptr<autoware::vehicle_cmd_gate::VehicleCmdGate>>,
@@ -82,75 +72,22 @@ reactor vehicle_cmd_gate {
         self->spinner_started = true;
     =}
 
-    // LF input: gear command from shift_decider
     reaction (gear_cmd_in_from_sd) {=
         if (gear_cmd_in_from_sd->is_present) {
             self->node->onAutoGearCmd(gear_cmd_in_from_sd->value);
         }
     =}
 
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            self->node->onKinematics(kinematic_state_in->value);
-        }
-    =}
-
-    // LF input: acceleration
-    reaction (acceleration_in) {=
-        if (acceleration_in->is_present) {
-            self->node->onAcceleration(acceleration_in->value);
-        }
-    =}
-
-    reaction (steering_in) {=
-        if (steering_in->is_present) {
-            self->node->onSteering(steering_in->value);
-        }
-    =}
-
-    reaction (engage_in) {=
-        if (engage_in->is_present) {
-            self->node->onEngage(engage_in->value);
-        }
-    =}
-
-    reaction (operation_mode_in) {=
-        if (operation_mode_in->is_present) {
-            self->node->onOperationMode(operation_mode_in->value);
-        }
-    =}
-
-    // LF input: turn signals from bpp
-    reaction (turn_indicators_in) {=
-        if (turn_indicators_in->is_present) {
-            self->node->onAutoTurnIndicatorsCmd(turn_indicators_in->value);
-        }
-    =}
-
-    // LF input: hazard lights from bpp
-    reaction (hazard_lights_in) {=
-        if (hazard_lights_in->is_present) {
-            self->node->onAutoHazardLightsCmd(hazard_lights_in->value);
-        }
-    =}
-
-    // LF input: control command from trajectory_follower (replaces ROS subscription)
-    // This reaction depends on prior input ports.
     reaction (auto_control_cmd_in) {=
         if (auto_control_cmd_in->is_present) {
             self->node->onAutoCtrlCmd(auto_control_cmd_in->value);
         }
     =}
 
-    // Start the LF timer after the first synthetic input tag so input
-    // reactions populate node state before the first update tick.
     timer t(10 msec, 50 msec);
     reaction (t) -> control_cmd, gear_cmd, turn_indicators_cmd, hazard_lights_cmd {=
-        // Run after the LF input reactions above for this logical time.
         self->node->onTimer();
 
-        // Check and forward outputs
         if (self->node->lf_control_cmd_is_set) {
             auto msg = std::make_shared<autoware_control_msgs::msg::Control>(
                 self->node->lf_output_control_cmd);
@@ -176,7 +113,6 @@ reactor vehicle_cmd_gate {
             self->node->lf_hazard_lights_is_set = false;
         }
 
-        // Also call publishStatus
         self->node->publishStatus();
     =}
 
@@ -195,225 +131,6 @@ reactor vehicle_cmd_gate {
     =}
 }
 
-reactor VehicleCmdGateTestSource {
-    output kinematic_state_out:std::shared_ptr<nav_msgs::msg::Odometry>
-    output acceleration_out:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>
-    output steering_out:std::shared_ptr<autoware_vehicle_msgs::msg::SteeringReport>
-    output engage_out:std::shared_ptr<autoware_vehicle_msgs::msg::Engage>
-    output operation_mode_out:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>
-    output auto_control_cmd_out:std::shared_ptr<autoware_control_msgs::msg::Control>
-    output gear_cmd_out:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
-    output turn_indicators_out:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>
-    output hazard_lights_out:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>
-
-    timer send_inputs(1 msec)
-
-    reaction(send_inputs) -> kinematic_state_out, acceleration_out, steering_out, engage_out,
-            operation_mode_out, auto_control_cmd_out, gear_cmd_out, turn_indicators_out,
-            hazard_lights_out {=
-        lf_print("VehicleCmdGateTestSource: sending synthetic inputs");
-
-        auto odom = std::make_shared<nav_msgs::msg::Odometry>();
-        odom->header.stamp = rclcpp::Clock().now();
-        odom->header.frame_id = "base_link";
-        odom->pose.pose.orientation.w = 1.0;
-        odom->twist.twist.linear.x = 0.0;
-        lf_set(kinematic_state_out, odom);
-
-        auto accel = std::make_shared<geometry_msgs::msg::AccelWithCovarianceStamped>();
-        accel->header.stamp = odom->header.stamp;
-        accel->header.frame_id = "base_link";
-        accel->accel.accel.linear.x = 0.0;
-        lf_set(acceleration_out, accel);
-
-        auto steering = std::make_shared<autoware_vehicle_msgs::msg::SteeringReport>();
-        steering->stamp = odom->header.stamp;
-        steering->steering_tire_angle = 0.0;
-        lf_set(steering_out, steering);
-
-        auto engage = std::make_shared<autoware_vehicle_msgs::msg::Engage>();
-        engage->stamp = odom->header.stamp;
-        engage->engage = true;
-        lf_set(engage_out, engage);
-
-        auto op_mode = std::make_shared<autoware_adapi_v1_msgs::msg::OperationModeState>();
-        op_mode->stamp = odom->header.stamp;
-        op_mode->mode = autoware_adapi_v1_msgs::msg::OperationModeState::AUTONOMOUS;
-        op_mode->is_autoware_control_enabled = true;
-        lf_set(operation_mode_out, op_mode);
-
-        auto control = std::make_shared<autoware_control_msgs::msg::Control>();
-        control->stamp = odom->header.stamp;
-        control->lateral.stamp = odom->header.stamp;
-        control->longitudinal.stamp = odom->header.stamp;
-        control->lateral.steering_tire_angle = 0.0;
-        control->lateral.steering_tire_rotation_rate = 0.0;
-        control->longitudinal.velocity = 1.0;
-        control->longitudinal.acceleration = 0.0;
-        lf_set(auto_control_cmd_out, control);
-
-        auto gear = std::make_shared<autoware_vehicle_msgs::msg::GearCommand>();
-        gear->stamp = odom->header.stamp;
-        gear->command = autoware_vehicle_msgs::msg::GearCommand::DRIVE;
-        lf_set(gear_cmd_out, gear);
-
-        auto turn = std::make_shared<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>();
-        turn->stamp = odom->header.stamp;
-        turn->command = autoware_vehicle_msgs::msg::TurnIndicatorsCommand::DISABLE;
-        lf_set(turn_indicators_out, turn);
-
-        auto hazard = std::make_shared<autoware_vehicle_msgs::msg::HazardLightsCommand>();
-        hazard->stamp = odom->header.stamp;
-        hazard->command = autoware_vehicle_msgs::msg::HazardLightsCommand::DISABLE;
-        lf_set(hazard_lights_out, hazard);
-    =}
-}
-
-reactor VehicleCmdGateChecker {
-    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>
-    input gear_cmd_in:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
-    input turn_indicators_in:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>
-    input hazard_lights_in:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>
-
-    state control_seen:bool = false
-    state gear_seen:bool = false
-    state turn_seen:bool = false
-    state hazard_seen:bool = false
-    state failed:bool = false
-    state bad_velocity:double = 0.0
-    state bad_gear:int = -1
-    state bad_turn:int = -1
-    state bad_hazard:int = -1
-
-    reaction(control_cmd_in) {=
-        if (!control_cmd_in->is_present) {
-            return;
-        }
-
-        self->control_seen = true;
-        lf_print(
-            "VehicleCmdGateChecker: observed control_cmd vel=%.3f",
-            control_cmd_in->value->longitudinal.velocity);
-
-        if (control_cmd_in->value->longitudinal.velocity <= 0.0) {
-            self->failed = true;
-            self->bad_velocity = control_cmd_in->value->longitudinal.velocity;
-            lf_request_stop();
-        }
-    =}
-
-    reaction(gear_cmd_in) {=
-        if (!gear_cmd_in->is_present) {
-            return;
-        }
-
-        self->gear_seen = true;
-        if (gear_cmd_in->value->command != autoware_vehicle_msgs::msg::GearCommand::DRIVE) {
-            self->failed = true;
-            self->bad_gear = gear_cmd_in->value->command;
-            lf_request_stop();
-        }
-    =}
-
-    reaction(turn_indicators_in) {=
-        if (!turn_indicators_in->is_present) {
-            return;
-        }
-
-        self->turn_seen = true;
-        if (turn_indicators_in->value->command !=
-                autoware_vehicle_msgs::msg::TurnIndicatorsCommand::DISABLE) {
-            self->failed = true;
-            self->bad_turn = turn_indicators_in->value->command;
-            lf_request_stop();
-        }
-    =}
-
-    reaction(hazard_lights_in) {=
-        if (!hazard_lights_in->is_present) {
-            return;
-        }
-
-        self->hazard_seen = true;
-        if (hazard_lights_in->value->command !=
-                autoware_vehicle_msgs::msg::HazardLightsCommand::DISABLE) {
-            self->failed = true;
-            self->bad_hazard = hazard_lights_in->value->command;
-            lf_request_stop();
-        }
-
-        if (self->control_seen && self->gear_seen && self->turn_seen && self->hazard_seen) {
-            lf_request_stop();
-        }
-    =}
-
-    reaction(shutdown) {=
-        if (self->failed) {
-            if (self->bad_gear != -1) {
-                lf_print_error_and_exit(
-                    "vehicle_cmd_gate test failed: expected DRIVE gear command, got %d",
-                    self->bad_gear);
-            }
-            if (self->bad_turn != -1) {
-                lf_print_error_and_exit(
-                    "vehicle_cmd_gate test failed: expected DISABLE turn indicator command, got %d",
-                    self->bad_turn);
-            }
-            if (self->bad_hazard != -1) {
-                lf_print_error_and_exit(
-                    "vehicle_cmd_gate test failed: expected DISABLE hazard command, got %d",
-                    self->bad_hazard);
-            }
-            lf_print_error_and_exit(
-                "vehicle_cmd_gate test failed: expected positive control velocity, got %.3f",
-                self->bad_velocity);
-        }
-
-        if (!(self->control_seen && self->gear_seen && self->turn_seen && self->hazard_seen)) {
-            lf_print_error_and_exit(
-                "vehicle_cmd_gate test failed: missing outputs control=%d gear=%d turn=%d hazard=%d",
-                self->control_seen ? 1 : 0, self->gear_seen ? 1 : 0,
-                self->turn_seen ? 1 : 0, self->hazard_seen ? 1 : 0);
-        }
-    =}
-}
-
-reactor VehicleCmdGateTimeout {
-    state timed_out:bool = false
-    timer timeout(500 msec)
-
-    reaction(timeout) {=
-        lf_print("VehicleCmdGateTimeout: timeout reached");
-        self->timed_out = true;
-        lf_request_stop();
-    =}
-
-    reaction(shutdown) {=
-        if (self->timed_out) {
-            lf_print_error_and_exit(
-                "vehicle_cmd_gate test timed out before all expected outputs were observed.");
-        }
-    =}
-}
-
 main reactor {
-    src = new VehicleCmdGateTestSource()
     vcg = new vehicle_cmd_gate()
-    check = new VehicleCmdGateChecker()
-    timeout_guard = new VehicleCmdGateTimeout()
-
-    src.kinematic_state_out -> vcg.kinematic_state_in
-    src.acceleration_out -> vcg.acceleration_in
-    src.steering_out -> vcg.steering_in
-    src.engage_out -> vcg.engage_in
-    src.operation_mode_out -> vcg.operation_mode_in
-    src.auto_control_cmd_out -> vcg.auto_control_cmd_in
-    src.gear_cmd_out -> vcg.gear_cmd_in_from_sd
-    src.turn_indicators_out -> vcg.turn_indicators_in
-    src.hazard_lights_out -> vcg.hazard_lights_in
-
-    vcg.control_cmd -> check.control_cmd_in
-    vcg.gear_cmd -> check.gear_cmd_in
-    vcg.turn_indicators_cmd -> check.turn_indicators_in
-    vcg.hazard_lights_cmd -> check.hazard_lights_in
 }

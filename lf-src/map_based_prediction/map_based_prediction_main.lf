@@ -15,11 +15,6 @@ preamble {=
 =}
 
 reactor map_based_prediction {
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    // Input from multi_object_tracker
-    input tracked_objects_in:std::shared_ptr<autoware_perception_msgs::msg::TrackedObjects>;
-    // Output to planning nodes
-    output predicted_objects_out:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
     state node:{= std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode> =};
 
     reaction (startup) {=
@@ -38,28 +33,6 @@ reactor map_based_prediction {
             &spin_node<std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::map_based_prediction::MapBasedPredictionNode>(self->node)));
-    =}
-
-    // LF input: tracked_objects_in
-    reaction (tracked_objects_in) {=
-        if (tracked_objects_in->is_present) {
-            self->node->objectsCallback(tracked_objects_in->value);
-        }
-    =}
-
-    // Output polling: check if node produced output
-    timer output_poll(100 msec, 100 msec);
-    reaction (output_poll) -> predicted_objects_out {=
-        if (self->node->lf_objects_is_set) {
-            auto msg = std::make_shared<autoware_perception_msgs::msg::PredictedObjects>(self->node->lf_output_objects);
-            lf_set(predicted_objects_out, msg);
-            self->node->lf_objects_is_set = false;
-        }
-    =}
-
-    // LF input: lanelet map
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

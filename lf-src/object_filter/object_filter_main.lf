@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor object_filter {
-    input objects_in:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
-    output objects_out:std::shared_ptr<autoware_perception_msgs::msg::DetectedObjects>;
     state node:{= std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode> =};
 
     reaction (startup) {=
@@ -28,13 +26,6 @@ reactor object_filter {
             &spin_node<std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::detected_object_validation::lanelet_filter::DetectedObjectLaneletFilterNode>(self->node)));
-    =}
-
-    // LF input: objects_in
-    reaction (objects_in) {=
-        if (objects_in->is_present) {
-            // objects processed via subscription callback
-        }
     =}
 }
 

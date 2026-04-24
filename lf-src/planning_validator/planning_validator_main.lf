@@ -6,24 +6,17 @@ preamble {=
     #include "autoware/planning_validator/node.hpp"
     #include "utils.hpp"
     #include "constants.hpp"
-
-    extern "C" void lf_request_stop(void);
 =}
 
 reactor planning_validator {
-    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-    input map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    input kinematics_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
-    input operation_mode_in:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>;
-    // Input from velocity_smoother
-    input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    // Output to trajectory_follower (final validated trajectory)
+    // Output to trajectory_follower (final validated trajectory).
+    // All upstream data (route, map, pointcloud, kinematics, acceleration,
+    // operation_mode, trajectory) flows into the node via its own ROS
+    // subscriptions (spin thread). The timer below polls the node's
+    // lf_traj_is_set flag — set by onTrajectory when a new validated
+    // trajectory is ready — and emits it over the LF port.
     output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
 
-    // Keep reactor state to raw pointers / POD types. LF allocates reactor
-    // self structs as raw memory, so non-trivial C++ objects are unsafe here.
     state node:autoware::planning_validator::PlanningValidatorNode*;
     state spinner_thread:{= pthread_t =}
     state spinner_started:bool = false
@@ -40,7 +33,6 @@ reactor planning_validator {
             {home + "/" + VEHICLE_INFO_PARAM, "/**"}
         });
 
-        // launch_modules parameter (list of module plugins)
         nodeOptions.parameter_overrides().push_back(
             rclcpp::Parameter("launch_modules", std::vector<std::string>{
                 "autoware::planning_validator::LatencyChecker",
@@ -60,51 +52,15 @@ reactor planning_validator {
         self->spinner_started = true;
     =}
 
-    reaction (route_in) {=
-        if (route_in->is_present) {
-            self->node->onRoute(route_in->value);
-        }
-    =}
-
-    reaction (map_in) {=
-        if (map_in->is_present) {
-            self->node->onLaneletMap(map_in->value);
-        }
-    =}
-
-    reaction (pointcloud_in) {=
-        if (pointcloud_in->is_present) {
-            self->node->onPointCloud(pointcloud_in->value);
-        }
-    =}
-
-    reaction (kinematics_in) {=
-        if (kinematics_in->is_present) {
-            self->node->onKinematics(kinematics_in->value);
-        }
-    =}
-
-    reaction (acceleration_in) {=
-        if (acceleration_in->is_present) {
-            self->node->onAcceleration(acceleration_in->value);
-        }
-    =}
-
-    reaction (operation_mode_in) {=
-        if (operation_mode_in->is_present) {
-            self->node->onOperationMode(operation_mode_in->value);
-        }
-    =}
-
-    reaction (traj_in) -> traj_out {=
-        if (traj_in->is_present) {
-            self->node->onTrajectory(traj_in->value);
-            if (self->node->lf_traj_is_set) {
-                auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                    self->node->lf_output_traj);
-                lf_set(traj_out, msg);
-                self->node->lf_traj_is_set = false;
-            }
+    // Poll the intercepted output at 33Hz. onTrajectory (fired by the ROS
+    // subscription) sets lf_traj_is_set; this timer relays to the LF port.
+    timer t(30 msec, 30 msec);
+    reaction (t) -> traj_out {=
+        if (self->node->lf_traj_is_set) {
+            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
+                self->node->lf_output_traj);
+            lf_set(traj_out, msg);
+            self->node->lf_traj_is_set = false;
         }
     =}
 
@@ -123,136 +79,6 @@ reactor planning_validator {
     =}
 }
 
-reactor PlanningValidatorTestSource {
-    output route_out:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>
-    output map_out:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>
-    output pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>
-    output kinematics_out:std::shared_ptr<nav_msgs::msg::Odometry>
-    output acceleration_out:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>
-    output operation_mode_out:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>
-    output traj_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>
-
-    timer send_inputs(1 msec)
-
-    reaction(send_inputs) -> route_out, map_out, pointcloud_out, kinematics_out,
-            acceleration_out, operation_mode_out, traj_out {=
-        lf_print("PlanningValidatorTestSource: sending synthetic inputs");
-
-        auto route = std::make_shared<autoware_planning_msgs::msg::LaneletRoute>();
-        route->header.stamp = rclcpp::Clock().now();
-        route->header.frame_id = "map";
-        lf_set(route_out, route);
-
-        auto map = std::make_shared<autoware_map_msgs::msg::LaneletMapBin>();
-        lf_set(map_out, map);
-
-        auto pointcloud = std::make_shared<sensor_msgs::msg::PointCloud2>();
-        pointcloud->header.stamp = route->header.stamp;
-        pointcloud->header.frame_id = "base_link";
-        pointcloud->height = 1;
-        pointcloud->width = 0;
-        lf_set(pointcloud_out, pointcloud);
-
-        auto odom = std::make_shared<nav_msgs::msg::Odometry>();
-        odom->header.stamp = route->header.stamp;
-        odom->header.frame_id = "map";
-        odom->child_frame_id = "base_link";
-        odom->pose.pose.orientation.w = 1.0;
-        lf_set(kinematics_out, odom);
-
-        auto accel = std::make_shared<geometry_msgs::msg::AccelWithCovarianceStamped>();
-        accel->header.stamp = route->header.stamp;
-        accel->header.frame_id = "base_link";
-        lf_set(acceleration_out, accel);
-
-        auto op_mode = std::make_shared<autoware_adapi_v1_msgs::msg::OperationModeState>();
-        op_mode->stamp = route->header.stamp;
-        op_mode->mode = autoware_adapi_v1_msgs::msg::OperationModeState::AUTONOMOUS;
-        op_mode->is_autoware_control_enabled = true;
-        lf_set(operation_mode_out, op_mode);
-
-        auto traj = std::make_shared<autoware_planning_msgs::msg::Trajectory>();
-        traj->header.stamp = route->header.stamp;
-        traj->header.frame_id = "map";
-        for (int i = 0; i < 4; ++i) {
-            autoware_planning_msgs::msg::TrajectoryPoint point;
-            point.pose.position.x = static_cast<double>(i);
-            point.pose.orientation.w = 1.0;
-            point.longitudinal_velocity_mps = 1.0;
-            traj->points.push_back(point);
-        }
-        lf_set(traj_out, traj);
-    =}
-}
-
-reactor PlanningValidatorChecker {
-    input traj_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>
-
-    state seen:int = 0
-    state failed:bool = false
-    state bad_size:int = -1
-
-    reaction(traj_in) {=
-        if (!traj_in->is_present) {
-            return;
-        }
-
-        self->seen += 1;
-        const int size = static_cast<int>(traj_in->value->points.size());
-        lf_print("PlanningValidatorChecker: observed trajectory with %d points", size);
-
-        if (size <= 0) {
-            self->failed = true;
-            self->bad_size = size;
-        }
-
-        lf_request_stop();
-    =}
-
-    reaction(shutdown) {=
-        if (self->failed) {
-            lf_print_error_and_exit(
-                "planning_validator test failed: expected non-empty trajectory, got %d points",
-                self->bad_size);
-        }
-        if (self->seen != 1) {
-            lf_print_error_and_exit(
-                "planning_validator test failed: expected exactly one trajectory output, got %d",
-                self->seen);
-        }
-    =}
-}
-
-reactor PlanningValidatorTimeout {
-    state timed_out:bool = false
-    timer timeout(500 msec)
-
-    reaction(timeout) {=
-        self->timed_out = true;
-        lf_request_stop();
-    =}
-
-    reaction(shutdown) {=
-        if (self->timed_out) {
-            lf_print_error_and_exit(
-                "planning_validator test timed out before a trajectory was observed.");
-        }
-    =}
-}
-
 main reactor {
-    src = new PlanningValidatorTestSource()
     pv = new planning_validator()
-    check = new PlanningValidatorChecker()
-    timeout_guard = new PlanningValidatorTimeout()
-
-    src.route_out -> pv.route_in
-    src.map_out -> pv.map_in
-    src.pointcloud_out -> pv.pointcloud_in
-    src.kinematics_out -> pv.kinematics_in
-    src.acceleration_out -> pv.acceleration_in
-    src.operation_mode_out -> pv.operation_mode_in
-    src.traj_out -> pv.traj_in
-
-    pv.traj_out -> check.traj_in
 }

@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor surround_obstacle_checker {
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode> =};
 
     reaction (startup) {=
@@ -31,18 +29,6 @@ reactor surround_obstacle_checker {
             &spin_node<std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::surround_obstacle_checker::SurroundObstacleCheckerNode>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            // kinematic_state stored for timer poll
-        }
-    =}
-
-    // LF input: pointcloud
-    reaction (obstacle_pointcloud_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

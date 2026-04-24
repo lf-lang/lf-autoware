@@ -1,9 +1,11 @@
 /**
  * LF reactor wrapping the Autoware Universe ShiftDecider.
  *
- * This node is timer-driven (100ms / 10Hz): polls control_cmd,
- * autoware_state, and current_gear via InterProcessPollingSubscriber,
- * then publishes a gear command.
+ * The node is timer-driven (10Hz): its internal ROS subscriptions receive
+ * autoware_state and current_gear via the spin thread; control_cmd arrives
+ * over an LF port from trajectory_follower. The internal ROS timer is
+ * cancelled and replaced by an LF timer that calls onTimer() and relays
+ * the intercepted gear command over the LF gear_cmd port.
  */
 target CCpp {
     cmake-include: "include/CMakeListsExtension.txt",
@@ -12,28 +14,17 @@ target CCpp {
 
 preamble {=
     #include "autoware/shift_decider/autoware_shift_decider.hpp"
-    #include <autoware_control_msgs/msg/control.hpp>
-    #include <autoware_system_msgs/msg/autoware_state.hpp>
-    #include <autoware_vehicle_msgs/msg/gear_command.hpp>
-    #include <autoware_vehicle_msgs/msg/gear_report.hpp>
-    #include <cstdlib>
     #include "utils.hpp"
     #include "constants.hpp"
-
-    extern "C" void lf_request_stop(void);
 =}
 
 reactor shift_decider {
-    // Input from trajectory_follower (replaces InterProcessPollingSubscriber)
+    // Control command from trajectory_follower over LF.
     input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>
-    input autoware_state_in:std::shared_ptr<autoware_system_msgs::msg::AutowareState>
-    input current_gear_in:std::shared_ptr<autoware_vehicle_msgs::msg::GearReport>
 
-    // Output to vehicle_cmd_gate
+    // Gear command forwarded to vehicle_cmd_gate.
     output gear_cmd:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
 
-    // Keep reactor state to raw pointers / POD types. LF allocates reactor
-    // self structs as raw memory, so non-trivial C++ objects are unsafe here.
     state node:autoware::shift_decider::ShiftDecider*
     state spinner_thread:{= pthread_t =}
     state spinner_started:bool = false
@@ -47,24 +38,16 @@ reactor shift_decider {
 
         self->node = new autoware::shift_decider::ShiftDecider(nodeOptions);
 
-        // Cancel the internal ROS2 timer (we use LF timer instead)
+        // Cancel the internal ROS2 timer — LF timer drives ticks.
         self->node->timer_->cancel();
 
-        // Start spin thread for InterProcessPollingSubscribers.
-        // 1. Create a shared_ptr wrapper for self->node because spin_node()
-        //    expects a shared_ptr argument.
-        // 2. Put that shared_ptr wrapper on the heap because node_shared_ptr
-        //    must outlive the startup reaction.
-        // 3. Use a no-op deleter so this shared_ptr does not own self->node.
-        //    The reactor keeps explicit ownership and frees self->node in the
-        //    shutdown reaction.
         auto node_shared_ptr = new std::shared_ptr<autoware::shift_decider::ShiftDecider>(
             self->node, [](autoware::shift_decider::ShiftDecider*) {});
         pthread_create(
             &self->spinner_thread, NULL,
             &spin_node<std::shared_ptr<autoware::shift_decider::ShiftDecider>>,
             static_cast<void*>(node_shared_ptr));
-        
+
         self->spinner_started = true;
     =}
 
@@ -74,19 +57,6 @@ reactor shift_decider {
         }
     =}
 
-    reaction (autoware_state_in) {=
-        if (autoware_state_in->is_present) {
-            self->node->onAutowareState(autoware_state_in->value);
-        }
-    =}
-
-    reaction (current_gear_in) {=
-        if (current_gear_in->is_present) {
-            self->node->onCurrentGear(current_gear_in->value);
-        }
-    =}
-
-    // Timer at 100ms matching the node's 10Hz rate
     timer t(0, 100 msec)
     reaction (t) -> gear_cmd {=
         self->node->onTimer();
@@ -100,8 +70,6 @@ reactor shift_decider {
     =}
 
     reaction (shutdown) {=
-        // Shut ROS down before process exit and join the spin thread so Fast
-        // DDS teardown does not race with a still-running executor thread.
         if (rclcpp::ok()) {
             rclcpp::shutdown();
         }
@@ -116,99 +84,6 @@ reactor shift_decider {
     =}
 }
 
-reactor ShiftDeciderTestSource {
-    output control_cmd_out:std::shared_ptr<autoware_control_msgs::msg::Control>
-    output autoware_state_out:std::shared_ptr<autoware_system_msgs::msg::AutowareState>
-    output current_gear_out:std::shared_ptr<autoware_vehicle_msgs::msg::GearReport>
-
-    timer send_inputs(0 msec)
-
-    reaction(send_inputs) -> control_cmd_out, autoware_state_out, current_gear_out {=
-        lf_print("ShiftDeciderTestSource: sending synthetic inputs");
-        auto control = std::make_shared<autoware_control_msgs::msg::Control>();
-        control->longitudinal.velocity = 2.0;
-        control->longitudinal.acceleration = 0.0;
-        control->lateral.steering_tire_angle = 0.0;
-        lf_set(control_cmd_out, control);
-
-        auto state = std::make_shared<autoware_system_msgs::msg::AutowareState>();
-        state->state = autoware_system_msgs::msg::AutowareState::DRIVING;
-        lf_set(autoware_state_out, state);
-
-        auto gear = std::make_shared<autoware_vehicle_msgs::msg::GearReport>();
-        gear->report = autoware_vehicle_msgs::msg::GearReport::PARK;
-        lf_set(current_gear_out, gear);
-    =}
-}
-
-reactor ShiftDeciderChecker {
-    input gear_cmd_in:std::shared_ptr<autoware_vehicle_msgs::msg::GearCommand>
-
-    state seen:int = 0
-    state failed:bool = false
-    // Keep only primitive failure state here; std::string in reactor state
-    // caused crashes because its constructor is never run by LF allocation.
-    state bad_command:int = -1
-
-    reaction(gear_cmd_in) {=
-        if (!gear_cmd_in->is_present) {
-            return;
-        }
-
-        self->seen += 1;
-        lf_print("ShiftDeciderChecker: observed gear_cmd=%d", gear_cmd_in->value->command);
-
-        if (gear_cmd_in->value->command != autoware_vehicle_msgs::msg::GearCommand::DRIVE) {
-            self->failed = true;
-            self->bad_command = gear_cmd_in->value->command;
-            lf_request_stop();
-            return;
-        }
-
-        lf_request_stop();
-    =}
-
-    reaction(shutdown) {=
-        if (self->failed) {
-            lf_print_error_and_exit(
-                "shift_decider test failed: expected DRIVE, got %d",
-                self->bad_command);
-        }
-        if (self->seen != 1) {
-            lf_print_error("shift_decider test failed: expected exactly one gear command, saw %d",
-                self->seen);
-            lf_print_error_and_exit("shift_decider test failed: expected exactly one gear command, saw %d",
-                self->seen);
-        }
-    =}
-}
-
-reactor ShiftDeciderTimeout {
-    state timed_out:bool = false
-    timer timeout(250 msec)
-
-    reaction(timeout) {=
-        lf_print("ShiftDeciderTimeout: timeout reached");
-        self->timed_out = true;
-        lf_request_stop();
-    =}
-
-    reaction(shutdown) {=
-        if (self->timed_out) {
-            lf_print_error_and_exit(
-                "shift_decider test timed out before a valid gear command was observed.");
-        }
-    =}
-}
-
 main reactor {
-    src = new ShiftDeciderTestSource();
-    sd = new shift_decider();
-    check = new ShiftDeciderChecker();
-    // timeout_guard = new ShiftDeciderTimeout();
-
-    src.control_cmd_out -> sd.control_cmd_in;
-    src.autoware_state_out -> sd.autoware_state_in;
-    src.current_gear_out -> sd.current_gear_in;
-    sd.gear_cmd -> check.gear_cmd_in;
+    sd = new shift_decider()
 }

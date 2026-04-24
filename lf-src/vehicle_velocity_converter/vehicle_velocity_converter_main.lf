@@ -16,7 +16,6 @@ preamble {=
 =}
 
 reactor vehicle_velocity_converter {
-    output twist_out:std::shared_ptr<geometry_msgs::msg::TwistWithCovarianceStamped>;
     state node:{= std::shared_ptr<autoware::vehicle_velocity_converter::VehicleVelocityConverter> =};
 
     reaction (startup) {=

@@ -15,21 +15,14 @@ preamble {=
 =}
 
 reactor lanelet2_map_loader {
-    output vector_map_out:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
     state node:{= std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode> =};
 
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + LANELET2_MAP_LOADER_PARAM;
-        std::string map_path = get_default_map_path();
-
-        // Resolve $(var lanelet2_map_path) substitution
-        std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
-            {"$(var lanelet2_map_path)", map_path + "/lanelet2_map.osm"}
-        });
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            resolved_yaml.c_str(), "/**");
+            yaml_path.c_str(), "/**");
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::map_loader::Lanelet2MapLoaderNode>(nodeOptions);
@@ -41,16 +34,6 @@ reactor lanelet2_map_loader {
             &spin_node<std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::map_loader::Lanelet2MapLoaderNode>(self->node)));
-    =}
-
-    // Output polling: check if node produced output
-    timer output_poll(100 msec, 100 msec);
-    reaction (output_poll) -> vector_map_out {=
-        if (self->node->lf_map_is_set) {
-            auto msg = std::make_shared<autoware_map_msgs::msg::LaneletMapBin>(self->node->lf_output_map);
-            lf_set(vector_map_out, msg);
-            self->node->lf_map_is_set = false;
-        }
     =}
 }
 

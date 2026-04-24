@@ -15,8 +15,12 @@ target CCpp {
 };
 
 preamble {=
-    #include "utils.hpp"
-    #include "constants.hpp"
+    // The CCpp stub exists only to let lfc generate the federation scaffold
+    // (sockets, RTI wiring) for federate__ci; the real implementation is
+    // the Python federate built separately from federate__ci.lf. Keep this
+    // TU free of rclcpp/Autoware headers — none of the shared lf-include
+    // helpers are needed here, and including utils.hpp pulls in rclcpp
+    // symbols that the stub has no reason to link against.
     #include <thread>
     #include <chrono>
 =}

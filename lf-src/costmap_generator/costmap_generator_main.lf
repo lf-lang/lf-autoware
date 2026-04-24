@@ -23,11 +23,6 @@ preamble {=
 =}
 
 reactor costmap_generator {
-    input scenario_in:std::shared_ptr<autoware_internal_planning_msgs::msg::Scenario>;
-    input obstacle_pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    output occupancy_grid_out:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
-
     state node:autoware::costmap_generator::CostmapGenerator*;
     state node_shared_ptr:std::shared_ptr<autoware::costmap_generator::CostmapGenerator>;
 
@@ -59,32 +54,12 @@ reactor costmap_generator {
                     self->node_shared_ptr)));
     =}
 
-    // Timer at 200ms (5Hz, typical costmap generation rate)
+    // Timer at 200ms (5Hz, typical costmap generation rate).
+    // LF drives onTimer() because we cancelled the node's internal ROS timer above.
+    // Outputs stay on ROS — this reactor has no LF ports.
     timer t(0, 200 msec);
-    reaction (t) -> occupancy_grid_out {=
+    reaction (t) {=
         self->node->onTimer();
-
-        if (self->node->lf_occupancy_grid_is_set) {
-            auto msg = std::make_shared<nav_msgs::msg::OccupancyGrid>(
-                self->node->lf_output_occupancy_grid);
-            lf_set(occupancy_grid_out, msg);
-            self->node->lf_occupancy_grid_is_set = false;
-        }
-    =}
-
-    // LF input: scenario
-    reaction (scenario_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: pointcloud
-    reaction (obstacle_pointcloud_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: lanelet map
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

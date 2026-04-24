@@ -14,7 +14,6 @@ preamble {=
 =}
 
 reactor predicted_path_checker {
-    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
     state node:autoware::predicted_path_checker::PredictedPathCheckerNode*;
     state node_shared_ptr:std::shared_ptr<autoware::predicted_path_checker::PredictedPathCheckerNode>;
 
@@ -43,13 +42,6 @@ reactor predicted_path_checker {
     timer t(0, 100 msec);
     reaction (t) {=
         self->node->onTimer();
-    =}
-
-    // LF input: predicted_objects_in
-    reaction (predicted_objects_in) {=
-        if (predicted_objects_in->is_present) {
-            // predicted_objects stored for timer poll
-        }
     =}
 }
 

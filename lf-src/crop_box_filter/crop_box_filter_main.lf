@@ -15,7 +15,6 @@ preamble {=
 =}
 
 reactor crop_box_filter {
-    output pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::crop_box_filter::CropBoxFilter> =};
 
     reaction (startup) {=
@@ -37,16 +36,6 @@ reactor crop_box_filter {
             &spin_node<std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::crop_box_filter::CropBoxFilter>(self->node)));
-    =}
-
-    // Output polling: check if node produced output
-    timer output_poll(100 msec, 100 msec);
-    reaction (output_poll) -> pointcloud_out {=
-        if (self->node->lf_cloud_is_set) {
-            auto msg = std::make_shared<sensor_msgs::msg::PointCloud2>(self->node->lf_output_cloud);
-            lf_set(pointcloud_out, msg);
-            self->node->lf_cloud_is_set = false;
-        }
     =}
 }
 

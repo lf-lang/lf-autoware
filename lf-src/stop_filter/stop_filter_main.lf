@@ -14,7 +14,6 @@ preamble {=
 =}
 
 reactor stop_filter {
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::stop_filter::StopFilterNode> =};
 
     reaction (startup) {=
@@ -32,13 +31,6 @@ reactor stop_filter {
             &spin_node<std::shared_ptr<autoware::stop_filter::StopFilterNode>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::stop_filter::StopFilterNode>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            self->node->callback_odometry(kinematic_state_in->value);
-        }
     =}
 }
 

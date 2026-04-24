@@ -20,16 +20,6 @@ preamble {=
 =}
 
 reactor behavior_path_planner {
-    input occupancy_grid_in:std::shared_ptr<nav_msgs::msg::OccupancyGrid>;
-    input route_in:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-    input vector_map_in:std::shared_ptr<autoware_map_msgs::msg::LaneletMapBin>;
-    input predicted_objects_in:std::shared_ptr<autoware_perception_msgs::msg::PredictedObjects>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
-    output path_out:std::shared_ptr<autoware_internal_planning_msgs::msg::PathWithLaneId>;
-    output turn_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>;
-    output hazard_signal_out:std::shared_ptr<autoware_vehicle_msgs::msg::HazardLightsCommand>;
-
     state node:autoware::behavior_path_planner::BehaviorPathPlannerNode*;
     state node_shared_ptr:std::shared_ptr<autoware::behavior_path_planner::BehaviorPathPlannerNode>;
 
@@ -91,59 +81,12 @@ reactor behavior_path_planner {
                     self->node_shared_ptr)));
     =}
 
-    // Timer at 100ms (10Hz, matching default behavior_path_planner rate)
+    // Timer at 100ms (10Hz, matching default behavior_path_planner rate).
+    // LF drives run() because we cancelled the node's internal ROS timer above.
+    // Outputs are not exposed as LF ports — downstream consumers read ROS topics.
     timer t(0, 100 msec);
-    reaction (t) -> path_out, turn_signal_out, hazard_signal_out {=
+    reaction (t) {=
         self->node->run();
-
-        if (self->node->lf_path_is_set) {
-            auto msg = std::make_shared<autoware_internal_planning_msgs::msg::PathWithLaneId>(
-                self->node->lf_output_path);
-            lf_set(path_out, msg);
-            self->node->lf_path_is_set = false;
-        }
-        if (self->node->lf_turn_signal_is_set) {
-            auto msg = std::make_shared<autoware_vehicle_msgs::msg::TurnIndicatorsCommand>(
-                self->node->lf_output_turn_signal);
-            lf_set(turn_signal_out, msg);
-            self->node->lf_turn_signal_is_set = false;
-        }
-        if (self->node->lf_hazard_signal_is_set) {
-            auto msg = std::make_shared<autoware_vehicle_msgs::msg::HazardLightsCommand>(
-                self->node->lf_output_hazard_signal);
-            lf_set(hazard_signal_out, msg);
-            self->node->lf_hazard_signal_is_set = false;
-        }
-    =}
-
-    // LF input: odometry for planning
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: acceleration for planning
-    reaction (acceleration_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: objects for planning
-    reaction (predicted_objects_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: lanelet map for planning
-    reaction (vector_map_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: route for planning
-    reaction (route_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: occupancy grid for planning
-    reaction (occupancy_grid_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

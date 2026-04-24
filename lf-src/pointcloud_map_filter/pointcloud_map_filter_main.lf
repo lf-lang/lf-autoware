@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor pointcloud_map_filter {
-    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    output pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent> =};
 
     reaction (startup) {=
@@ -28,13 +26,6 @@ reactor pointcloud_map_filter {
             &spin_node<std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::compare_map_segmentation::VoxelBasedApproximateCompareMapFilterComponent>(self->node)));
-    =}
-
-    // LF input: pointcloud_in
-    reaction (pointcloud_in) {=
-        if (pointcloud_in->is_present) {
-            // pointcloud processed via compare_map subscription
-        }
     =}
 }
 

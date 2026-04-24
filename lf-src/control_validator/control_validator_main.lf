@@ -9,8 +9,6 @@ preamble {=
 =}
 
 reactor control_validator {
-    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::control_validator::ControlValidator> =};
 
     reaction (startup) {=
@@ -27,18 +25,6 @@ reactor control_validator {
             &spin_node<std::shared_ptr<autoware::control_validator::ControlValidator>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::control_validator::ControlValidator>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            // kinematic_state stored for timer poll
-        }
-    =}
-
-    // LF input: trajectory
-    reaction (trajectory_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

@@ -15,8 +15,6 @@ preamble {=
 =}
 
 reactor ground_segmentation {
-    input pointcloud_in:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
-    output obstacle_pointcloud_out:std::shared_ptr<sensor_msgs::msg::PointCloud2>;
     state node:{= std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent> =};
 
     reaction (startup) {=
@@ -38,23 +36,6 @@ reactor ground_segmentation {
             &spin_node<std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::ground_segmentation::ScanGroundFilterComponent>(self->node)));
-    =}
-
-    // LF input: pointcloud_in
-    reaction (pointcloud_in) {=
-        if (pointcloud_in->is_present) {
-            // pointcloud processed via filter base class subscription
-        }
-    =}
-
-    // Output polling: check if node produced output
-    timer output_poll(100 msec, 100 msec);
-    reaction (output_poll) -> obstacle_pointcloud_out {=
-        if (self->node->lf_cloud_is_set) {
-            auto msg = std::make_shared<sensor_msgs::msg::PointCloud2>(self->node->lf_output_cloud);
-            lf_set(obstacle_pointcloud_out, msg);
-            self->node->lf_cloud_is_set = false;
-        }
     =}
 }
 

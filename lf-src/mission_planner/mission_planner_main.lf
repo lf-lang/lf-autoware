@@ -20,8 +20,6 @@ preamble {=
 =}
 
 reactor mission_planner {
-    output route_out:std::shared_ptr<autoware_planning_msgs::msg::LaneletRoute>;
-
     state node:autoware::mission_planner::MissionPlanner*;
     state node_shared_ptr:std::shared_ptr<autoware::mission_planner::MissionPlanner>;
 
@@ -52,16 +50,8 @@ reactor mission_planner {
                     self->node_shared_ptr)));
     =}
 
-    // Poll for route outputs at 10Hz (service callbacks run in spin thread)
-    timer t(0, 100 msec);
-    reaction (t) -> route_out {=
-        if (self->node->lf_route_is_set) {
-            auto msg = std::make_shared<autoware_planning_msgs::msg::LaneletRoute>(
-                self->node->lf_output_route);
-            lf_set(route_out, msg);
-            self->node->lf_route_is_set = false;
-        }
-    =}
+    // No LF timer needed — mission_planner is service-driven; the spin thread
+    // services route-set requests and the node publishes routes over ROS.
 }
 
 main reactor {

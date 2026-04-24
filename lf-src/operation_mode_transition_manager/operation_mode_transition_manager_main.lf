@@ -9,10 +9,6 @@ preamble {=
 =}
 
 reactor operation_mode_transition_manager {
-    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    input control_cmd_in:std::shared_ptr<autoware_control_msgs::msg::Control>;
-    output operation_mode_out:std::shared_ptr<autoware_adapi_v1_msgs::msg::OperationModeState>;
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
     state node:{= std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager> =};
 
     reaction (startup) {=
@@ -32,23 +28,6 @@ reactor operation_mode_transition_manager {
             &spin_node<std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager>>,
             static_cast<void*>(
                 new std::shared_ptr<autoware::operation_mode_transition_manager::OperationModeTransitionManager>(self->node)));
-    =}
-
-    // LF input: kinematic_state_in
-    reaction (kinematic_state_in) {=
-        if (kinematic_state_in->is_present) {
-            // kinematic_state stored for timer poll
-        }
-    =}
-
-    // LF input: trajectory
-    reaction (trajectory_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: control cmd
-    reaction (control_cmd_in) {=
-        // Data delivered via LF connection at correct logical time
     =}
 }
 

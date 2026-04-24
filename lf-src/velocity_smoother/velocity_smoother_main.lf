@@ -17,11 +17,6 @@ preamble {=
 =}
 
 reactor velocity_smoother {
-    input kinematic_state_in:std::shared_ptr<nav_msgs::msg::Odometry>;
-    input acceleration_in:std::shared_ptr<geometry_msgs::msg::AccelWithCovarianceStamped>;
-    input trajectory_in:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-    output trajectory_out:std::shared_ptr<autoware_planning_msgs::msg::Trajectory>;
-
     state node:autoware::velocity_smoother::VelocitySmootherNode*;
     state node_shared_ptr:std::shared_ptr<autoware::velocity_smoother::VelocitySmootherNode>;
 
@@ -62,28 +57,9 @@ reactor velocity_smoother {
                     self->node_shared_ptr)));
     =}
 
-    reaction (trajectory_in) -> trajectory_out {=
-        // Call the node's main processing callback
-        self->node->onCurrentTrajectory(trajectory_in->value);
-
-        // Check if output was produced
-        if (self->node->lf_trajectory_is_set) {
-            auto msg = std::make_shared<autoware_planning_msgs::msg::Trajectory>(
-                self->node->lf_output_trajectory);
-            lf_set(trajectory_out, msg);
-            self->node->lf_trajectory_is_set = false;
-        }
-    =}
-
-    // LF input: odometry
-    reaction (kinematic_state_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
-
-    // LF input: acceleration
-    reaction (acceleration_in) {=
-        // Data delivered via LF connection at correct logical time
-    =}
+    // Subscription-driven: the node's ROS trajectory subscription fires in the
+    // spin thread and the node publishes the smoothed trajectory over ROS.
+    // No LF ports or reactions.
 }
 
 main reactor {
