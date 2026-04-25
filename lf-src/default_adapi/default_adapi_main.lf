@@ -1,96 +1,63 @@
 /**
- * LF reactor wrapping the Autoware Universe Default ADAPI nodes.
+ * LF reactor wrapping autoware::default_adapi::VehicleInfoNode.
  *
- * Container-style reactor: creates all 15 ADAPI composable nodes
- * (AutowareState, Diagnostics, FailSafe, Heartbeat, ManualControl,
- * Motion, MrmRequest, OperationMode, Perception, Planning,
- * VehicleStatus, VehicleCommand, VehicleMetrics, VehicleInfo,
- * VehicleDoor) and spins them in a background executor.
+ * The full Autoware default_adapi launch creates 15+ composable nodes, each
+ * in the /adapi/node/<name> namespace, with FQN-scoped parameters from the
+ * YAML. Creating them programmatically with a single NodeOptions bypasses
+ * the namespace, so their declare_parameter<T>("update_rate") (and friends)
+ * throw "must be initialized" at construction.
+ *
+ * Only VehicleInfoNode is actually needed by the driving path — it serves
+ * /adapi/node/vehicle_info/get_parameters (consumed by the RViz planning-
+ * factor overlay and other ADAPI clients). The other 14 sub-nodes are left
+ * unlaunched; if they become necessary, the proper fix is to construct each
+ * sub-node with a NodeOptions carrying "-r __node:=<n> -r __ns:=/adapi/node"
+ * arguments so their FQN matches the YAML sections.
  */
 target CCpp {
     cmake-include: "include/CMakeListsExtension.txt"
 };
 
 preamble {=
-    #include "compatibility/autoware_state.hpp"
-    #include "diagnostics.hpp"
-    #include "fail_safe.hpp"
-    #include "heartbeat.hpp"
-    #include "manual_control.hpp"
-    #include "motion.hpp"
-    #include "mrm_request.hpp"
-    #include "operation_mode.hpp"
-    #include "perception.hpp"
-    #include "planning.hpp"
-    #include "vehicle_status.hpp"
-    #include "vehicle_command.hpp"
-    #include "vehicle_metrics.hpp"
     #include "vehicle_info.hpp"
-    #include "vehicle_door.hpp"
     #include "utils.hpp"
     #include "constants.hpp"
 =}
 
 reactor default_adapi {
-    state executor:{= std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> =};
+    state node:{= std::shared_ptr<autoware::default_adapi::VehicleInfoNode> =};
 
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + DEFAULT_ADAPI_PARAM;
+        std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
 
-        try { rclcpp::init(0, NULL); } catch (...) { }
+        // Load both the adapi YAML (for any relevant overrides) and the
+        // vehicle_info YAML (wheel_base, front_overhang, etc. that
+        // VehicleInfoNode re-serves).
+        rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
+            {yaml_path, "/**"},
+            {vehicle_info_path, "/**"}
+        });
 
-        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+        // Remap node to /adapi/node/vehicle_info so its service topic is
+        // /adapi/node/vehicle_info/get_parameters (what PlanningFactorRvizPlugin
+        // asks for).
+        auto args = nodeOptions.arguments();
+        args.insert(args.end(), {
+            "-r", "__node:=vehicle_info",
+            "-r", "__ns:=/adapi/node"
+        });
+        nodeOptions.arguments(args);
 
-        self->executor = std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
+        self->node = std::make_shared<autoware::default_adapi::VehicleInfoNode>(nodeOptions);
 
-        // Create all ADAPI nodes
-        auto autoware_state = std::make_shared<autoware::default_adapi::AutowareStateNode>(nodeOptions);
-        auto diagnostics = std::make_shared<autoware::default_adapi::DiagnosticsNode>(nodeOptions);
-        auto fail_safe = std::make_shared<autoware::default_adapi::FailSafeNode>(nodeOptions);
-        auto heartbeat = std::make_shared<autoware::default_adapi::HeartbeatNode>(nodeOptions);
-        auto motion = std::make_shared<autoware::default_adapi::MotionNode>(nodeOptions);
-        auto mrm_request = std::make_shared<autoware::default_adapi::MrmRequestNode>(nodeOptions);
-        auto operation_mode = std::make_shared<autoware::default_adapi::OperationModeNode>(nodeOptions);
-        auto perception = std::make_shared<autoware::default_adapi::PerceptionNode>(nodeOptions);
-        auto planning = std::make_shared<autoware::default_adapi::PlanningNode>(nodeOptions);
-        auto vehicle_status = std::make_shared<autoware::default_adapi::VehicleStatusNode>(nodeOptions);
-        auto vehicle_command = std::make_shared<autoware::default_adapi::VehicleCommandNode>(nodeOptions);
-        auto vehicle_metrics = std::make_shared<autoware::default_adapi::VehicleMetricsNode>(nodeOptions);
-        auto vehicle_info = std::make_shared<autoware::default_adapi::VehicleInfoNode>(nodeOptions);
-        auto vehicle_door = std::make_shared<autoware::default_adapi::VehicleDoorNode>(nodeOptions);
-
-        self->executor->add_node(autoware_state);
-        self->executor->add_node(diagnostics);
-        self->executor->add_node(fail_safe);
-        self->executor->add_node(heartbeat);
-        self->executor->add_node(motion);
-        self->executor->add_node(mrm_request);
-        self->executor->add_node(operation_mode);
-        self->executor->add_node(perception);
-        self->executor->add_node(planning);
-        self->executor->add_node(vehicle_status);
-        self->executor->add_node(vehicle_command);
-        self->executor->add_node(vehicle_metrics);
-        self->executor->add_node(vehicle_info);
-        self->executor->add_node(vehicle_door);
-
-        // Spin all nodes in a background thread
-        auto exec = self->executor;
         pthread_t spinner_thread;
-        pthread_create(&spinner_thread, NULL, [](void* arg) -> void* {
-            auto executor = *static_cast<std::shared_ptr<
-                rclcpp::executors::MultiThreadedExecutor>*>(arg);
-            while (rclcpp::ok()) {
-                executor->spin_some(std::chrono::milliseconds(1));
-                std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            }
-            delete static_cast<std::shared_ptr<
-                rclcpp::executors::MultiThreadedExecutor>*>(arg);
-            return nullptr;
-        }, static_cast<void*>(new std::shared_ptr<
-            rclcpp::executors::MultiThreadedExecutor>(exec)));
+        pthread_create(
+            &spinner_thread, NULL,
+            &spin_node<std::shared_ptr<autoware::default_adapi::VehicleInfoNode>>,
+            static_cast<void*>(
+                new std::shared_ptr<autoware::default_adapi::VehicleInfoNode>(self->node)));
     =}
 }
 

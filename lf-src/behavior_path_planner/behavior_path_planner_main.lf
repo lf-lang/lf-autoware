@@ -59,19 +59,36 @@ reactor behavior_path_planner {
             {vehicle_info_path, "/**"}
         });
 
-        // Set launch-time parameters
+        // launch_modules — the full default set from Autoware's
+        // behavior_planning.launch.xml. An empty list made the scene manager
+        // print "<module> registered in slot_configuration is not registered,
+        // skipping" and segfault when slot_configuration referenced unloaded
+        // modules.
         nodeOptions.parameter_overrides().push_back(
-            rclcpp::Parameter("launch_modules", std::vector<std::string>{}));
+            rclcpp::Parameter("launch_modules", std::vector<std::string>{
+                "autoware::behavior_path_planner::StaticObstacleAvoidanceModuleManager",
+                "autoware::behavior_path_planner::DynamicObstacleAvoidanceModuleManager",
+                "autoware::behavior_path_planner::SideShiftModuleManager",
+                "autoware::behavior_path_planner::BidirectionalTrafficModuleManager",
+                "autoware::behavior_path_planner::StartPlannerModuleManager",
+                "autoware::behavior_path_planner::SamplingPlannerModuleManager",
+                "autoware::behavior_path_planner::GoalPlannerModuleManager",
+                "autoware::behavior_path_planner::LaneChangeRightModuleManager",
+                "autoware::behavior_path_planner::LaneChangeLeftModuleManager",
+                "autoware::behavior_path_planner::ExternalRequestLaneChangeRightModuleManager",
+                "autoware::behavior_path_planner::ExternalRequestLaneChangeLeftModuleManager",
+                "autoware::behavior_path_planner::AvoidanceByLaneChangeModuleManager",
+            }));
 
         self->node = new autoware::behavior_path_planner::BehaviorPathPlannerNode(nodeOptions);
-
-        // Cancel the internal ROS2 timer (we use LF timer instead)
-        self->node->timer_->cancel();
 
         self->node_shared_ptr = std::shared_ptr<
             autoware::behavior_path_planner::BehaviorPathPlannerNode>(self->node);
 
-        // Start spin thread for polling subscribers and TF
+        // Pure shallow wrapper: let the node's own ROS timer fire run() in the
+        // spin thread. Cancelling the ROS timer and driving run() from an LF
+        // timer caused a segfault in librclcpp on the first tick — subscriptions
+        // weren't fully populated by the time LF pinged run().
         pthread_t spinner_thread;
         pthread_create(
             &spinner_thread, NULL,
@@ -79,14 +96,6 @@ reactor behavior_path_planner {
             static_cast<void*>(
                 new std::shared_ptr<autoware::behavior_path_planner::BehaviorPathPlannerNode>(
                     self->node_shared_ptr)));
-    =}
-
-    // Timer at 100ms (10Hz, matching default behavior_path_planner rate).
-    // LF drives run() because we cancelled the node's internal ROS timer above.
-    // Outputs are not exposed as LF ports — downstream consumers read ROS topics.
-    timer t(0, 100 msec);
-    reaction (t) {=
-        self->node->run();
     =}
 }
 

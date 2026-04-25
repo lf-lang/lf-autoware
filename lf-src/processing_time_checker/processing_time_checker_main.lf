@@ -24,6 +24,10 @@ reactor processing_time_checker {
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
             yaml_path.c_str(), "/**");
 
+        // Launch-time parameters not declared in the param YAML.
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("output_metrics", false));
+
         self->node = new autoware::processing_time_checker::ProcessingTimeChecker(nodeOptions);
         self->node->timer_->cancel();
         self->node_shared_ptr = std::shared_ptr<autoware::processing_time_checker::ProcessingTimeChecker>(self->node);

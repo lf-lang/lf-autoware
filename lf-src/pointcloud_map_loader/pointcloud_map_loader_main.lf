@@ -31,6 +31,26 @@ reactor pointcloud_map_loader {
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
             resolved_yaml.c_str(), "/**");
+
+        // Town01 ships only the .pcd, not the metadata YAML the partial-load
+        // service needs. Disable partial_load so the node falls back to
+        // whole-PCD publish at startup.
+        nodeOptions.parameter_overrides().push_back(
+            rclcpp::Parameter("enable_partial_load", false));
+
+        // Remap the output topic into the /map/ namespace; without this the
+        // PCD lands on /output/pointcloud_map (relative) and downstream
+        // subscribers (NDT, occupancy_grid_map_filter, RViz) miss it.
+        auto args = nodeOptions.arguments();
+        args.insert(args.end(), {
+            "-r", "output/pointcloud_map:=/map/pointcloud_map",
+            "-r", "output/debug/downsampled_pointcloud_map:=/map/debug/downsampled_pointcloud_map",
+            "-r", "service/get_partial_pcd_map:=/map/get_partial_pointcloud_map",
+            "-r", "service/get_differential_pcd_map:=/map/get_differential_pointcloud_map",
+            "-r", "service/get_selected_pcd_map:=/map/get_selected_pointcloud_map"
+        });
+        nodeOptions.arguments(args);
+
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::map_loader::PointCloudMapLoaderNode>(nodeOptions);

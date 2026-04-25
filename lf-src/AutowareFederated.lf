@@ -100,6 +100,7 @@ import duplicated_node_checker from "duplicated_node_checker/duplicated_node_che
 import processing_time_checker from "processing_time_checker/processing_time_checker_main.lf";
 import pipeline_latency_monitor from "pipeline_latency_monitor/pipeline_latency_monitor_main.lf";
 import component_state_monitor from "component_state_monitor/component_state_monitor_main.lf";
+import default_adapi from "default_adapi/default_adapi_main.lf";
 
 // === CARLA Interface (CCpp stub — swapped with Python federate at runtime) ===
 import carla_interface from "carla_interface/carla_interface_main.lf";
@@ -192,15 +193,19 @@ federated reactor AutowareFederated {
     bridge = new bridge_interface();
     /////////////////////////////////////
 
-    // System (IDs 67-72)
+    // System (IDs 67-73). default_adapi is a container reactor hosting 14
+    // ADAPI sub-nodes under one MultiThreadedExecutor; it serves
+    // /adapi/node/vehicle_info/get_parameters (consumed by the RViz
+    // planning-factor overlay and downstream ADAPI clients).
     mcso = new mrm_comfortable_stop_operator();
     hsc = new hazard_status_converter();
     dnc = new duplicated_node_checker();
     ptc = new processing_time_checker();
     plm = new pipeline_latency_monitor();
     csm = new component_state_monitor();
+    adapi = new default_adapi();
 
-    // CARLA Interface — CCpp stub, ID 73
+    // CARLA Interface — CCpp stub, ID 74
     ci = new carla_interface();
 
     // LF connections only exist between manually-validated reactors

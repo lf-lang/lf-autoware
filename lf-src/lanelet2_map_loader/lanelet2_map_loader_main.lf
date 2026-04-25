@@ -20,9 +20,30 @@ reactor lanelet2_map_loader {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + LANELET2_MAP_LOADER_PARAM;
+        std::string map_path = get_default_map_path();
+
+        // The YAML has "lanelet2_map_path: $(var lanelet2_map_path)" — a launch
+        // substitution that LF's YAML parser doesn't expand. Resolve it here
+        // before loading so the node sees an absolute path.
+        std::string resolved_yaml = resolve_yaml_vars(yaml_path, {
+            {"$(var lanelet2_map_path)", map_path + "/lanelet2_map.osm"}
+        });
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+            resolved_yaml.c_str(), "/**");
+
+        // Remap the node's internal topics into the /map/ namespace so
+        // downstream subs (/map/vector_map, /map/vector_map_marker) resolve.
+        // The launch file's default is bare "vector_map" — we force the
+        // prefix to match map_projection_loader's namespace.
+        auto args = nodeOptions.arguments();
+        args.insert(args.end(), {
+            "-r", "output/lanelet2_map:=/map/vector_map",
+            "-r", "output/lanelet2_map_marker:=/map/vector_map_marker",
+            "-r", "input/map_projector_info:=/map/map_projector_info"
+        });
+        nodeOptions.arguments(args);
+
         try { rclcpp::init(0, NULL); } catch (...) { }
 
         self->node = std::make_shared<autoware::map_loader::Lanelet2MapLoaderNode>(nodeOptions);

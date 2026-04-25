@@ -20,10 +20,12 @@ reactor path_generator {
     reaction (startup) {=
         std::string home = get_lf_autoware_home();
         std::string yaml_path = home + "/" + PATH_GENERATOR_PARAM;
+        std::string nearest_search_path = home + "/" + PLANNING_NEAREST_SEARCH_PARAM;
         std::string vehicle_info_path = home + "/" + VEHICLE_INFO_PARAM;
 
         rclcpp::NodeOptions nodeOptions = get_node_options_from_yamls({
             {yaml_path, "/**"},
+            {nearest_search_path, "/**"},
             {vehicle_info_path, "/**"}
         });
 

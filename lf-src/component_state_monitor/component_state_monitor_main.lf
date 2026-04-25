@@ -18,11 +18,17 @@ reactor component_state_monitor {
     state node_shared_ptr:std::shared_ptr<autoware::component_state_monitor::StateMonitor>;
 
     reaction (startup) {=
-        std::string home = get_lf_autoware_home();
-        std::string yaml_path = home + "/" + COMPONENT_STATE_MONITOR_PARAM;
-
-        rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(
-            yaml_path.c_str(), "/**");
+        // component_state_monitor's "topics.yaml" is a list of topic configs
+        // meant to be parsed by the launch system into per-module std::vector<std::string>
+        // parameters (launch.sensing, autonomous.control, …). It is NOT a valid
+        // ROS param YAML — loading it with get_node_options_from_yaml fails.
+        // Until the python-launch substitution is reimplemented here, start the
+        // node with default (empty) topic lists — it will report STALE for
+        // every module but won't crash the federation.
+        // rclcpp::init() is normally called inside get_node_options_from_yaml;
+        // we skip that function here, so initialise explicitly.
+        try { rclcpp::init(0, NULL); } catch (...) { }
+        rclcpp::NodeOptions nodeOptions;
 
         self->node = new autoware::component_state_monitor::StateMonitor(nodeOptions);
         self->node->timer_->cancel();

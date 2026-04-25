@@ -1,5 +1,5 @@
 #!/bin/bash
-# Launcher for federated AutowareFederated.lf (72 federates: 70 CCpp + 1 Python CARLA)
+# Launcher for federated AutowareFederated.lf (72 federates: 71 CCpp + 1 Python CARLA)
 set -m
 shopt -s huponexit
 
@@ -31,8 +31,14 @@ export CUDA_VISIBLE_DEVICES=1
 BIN_DIR="$LF_AUTOWARE_HOME/fed-gen/AutowareFederated/bin"
 CARLA_FED_DIR="$LF_AUTOWARE_HOME/src-gen/lf-src/carla_interface/federate__ci"
 
-echo "#### Launching RTI"
-"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 71 &
+# Per-federate logs so a crashing federate's stack trace isn't drowned in the
+# launcher tty. Check logs/federation/federate__<name>.log after startup.
+LOG_DIR="$LF_AUTOWARE_HOME/logs/federation"
+mkdir -p "$LOG_DIR"
+rm -f "$LOG_DIR"/federate__*.log "$LOG_DIR"/RTI.log
+
+echo "#### Launching RTI (log: $LOG_DIR/RTI.log)"
+"$BIN_DIR/RTI" -i ${FEDERATION_ID} -n 72 > "$LOG_DIR/RTI.log" 2>&1 &
 RTI=$!
 sleep 2
 
@@ -47,25 +53,32 @@ for fed in cbf imu vvc rdf ptf vgof adf idec \
            mp bpp bvp ps po mvp soc ss vs fp cg pv evls pg psa \
            tf sd vcg omtm ldc cv aeb cd occ ppc ecs \
            bridge \
-           mcso hsc dnc ptc plm csm; do
-    echo "#### Launching federate__${fed}"
-    if [ "$fed" = "lcp" ]; then
-        # lidar_centerpoint needs GPU 0 (RTX 3070) for TensorRT
-        CUDA_VISIBLE_DEVICES=0 "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
-    else
-        "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID &
-    fi
+           mcso hsc dnc ptc plm csm adapi; do
+    log="$LOG_DIR/federate__${fed}.log"
+    echo "#### Launching federate__${fed}  (log: $log)"
+    # TensorRT engines in ~/autoware_data/ were serialized for compute 8.6
+    # (RTX 3070). Federates that deserialize them must run on GPU 0.
+    case "$fed" in
+        lcp|tlc)
+            CUDA_VISIBLE_DEVICES=0 "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID \
+                > "$log" 2>&1 &
+            ;;
+        *)
+            "$BIN_DIR/federate__${fed}" -i $FEDERATION_ID > "$log" 2>&1 &
+            ;;
+    esac
     pids[$i]=$!
     i=$((i+1))
     sleep 0.1  # Stagger launches to avoid RTI accept() overload
 done
 
 # Python CARLA federate (ID 73)
-echo "#### Launching federate__ci (Python CARLA interface)"
-(cd "$CARLA_FED_DIR" && python3 -m federate__ci -i $FEDERATION_ID) &
+log="$LOG_DIR/federate__ci.log"
+echo "#### Launching federate__ci (Python CARLA interface)  (log: $log)"
+(cd "$CARLA_FED_DIR" && python3 -m federate__ci -i $FEDERATION_ID) > "$log" 2>&1 &
 pids[$i]=$!
 
-echo "#### All 72 federates launched (70 CCpp + 1 Python). Bringing RTI to foreground."
+echo "#### All 72 federates launched (71 CCpp + 1 Python). Bringing RTI to foreground."
 fg %1
 echo "RTI exited. Waiting for federates..."
 for pid in "${pids[@]}"; do

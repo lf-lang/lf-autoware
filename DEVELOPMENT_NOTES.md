@@ -4,35 +4,121 @@ Technical findings, workarounds, and design decisions encountered during the por
 
 ## Build System
 
-### Parallel Federation Builds
+### Full Compilation Workflow
 
-`lfc` builds federates sequentially — a full 72-federate build takes ~2 hours. **Workaround: generate scaffold first, then build in parallel with cmake.** This cuts build time to ~30–40 minutes (linking dominates; Autoware has massive dependency trees).
+End-to-end, from a clean checkout to a runnable federation. All commands run from the repo root.
 
-#### Using `lf-src/parallel_build.sh` (preferred)
+#### 0. Shell environment
+
+Run once per terminal before any step. `parallel_build.sh` and `build_carla_federate.sh` also do this internally, but you need it for any ad-hoc `lfc-dev` / `cmake` invocations.
 
 ```bash
-# Step 1: generate scaffold only (~3 min; runs sequentially inside lfc)
-source /opt/ros/humble/setup.bash && source install/setup.bash
+cd /home/shaokai/Documents/projects/parking-demo/lf-autoware
+source /opt/ros/humble/setup.bash
+source install/setup.bash 2>/dev/null        # Autoware colcon workspace
 export LF_AUTOWARE_HOME="$PWD"
-lfc-dev --no-compile lf-src/AutowareFederated.lf
 
-# Step 2: build all federates in parallel with live progress
+# Strip conda: its numpy 2.x and libstdc++ clash with cv_bridge / ROS msg libs.
+unset CONDA_EXE CONDA_PREFIX CONDA_PROMPT_MODIFIER CONDA_SHLVL CONDA_PYTHON_EXE CONDA_DEFAULT_ENV _CE_CONDA
+export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+export PYTHONPATH=$(echo $PYTHONPATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
+```
+
+#### 1. Build the Autoware C++ workspace
+
+Colcon builds every Autoware package the LF reactors wrap. Skip if `install/` already exists and nothing in `src/` changed.
+
+```bash
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+source install/setup.bash
+```
+
+Partial rebuilds for one package (when you've only touched its header to expose a callback, for instance) are documented below under "Rebuild One Autoware Package".
+
+#### 2. Generate the federation scaffold (~3 min)
+
+`lfc-dev` with `--no-compile` emits all the per-federate `.lf` files + cmake scaffolds under `fed-gen/AutowareFederated/` without actually compiling them. It runs serially internally, but it's the only serial step.
+
+```bash
+lfc-dev --no-compile lf-src/AutowareFederated.lf
+```
+
+Outputs:
+- `fed-gen/AutowareFederated/src/federate__<short>.lf` — one per federate
+- `fed-gen/AutowareFederated/src-gen/federate__<short>/` — generated C/C++ + `CMakeLists.txt`
+- `fed-gen/AutowareFederated/src/include/_federate__<short>_preamble.h` — federation wiring (needed by step 4)
+- `fed-gen/AutowareFederated/bin/RTI` — the RTI binary
+
+#### 3. Compile the 70 CCpp federates in parallel (~30–40 min)
+
+```bash
 bash lf-src/parallel_build.sh
 ```
 
-The script sources ROS + Autoware install, strips conda from `PATH`/`LD_LIBRARY_PATH` (avoids the numpy/libstdc++ conflicts documented below), and fans out `cmake ... && cmake --build ... --target install` across all `fed-gen/AutowareFederated/src-gen/federate__*/` directories.
+`parallel_build.sh` fans out `cmake ... && cmake --build ... --target install` across every `fed-gen/.../federate__*/` directory. It re-sources the env from step 0, so you can launch it from a fresh shell too.
 
 **Output:** each federate's cmake/g++ output is streamed to stdout tagged with `[<short_name>]` and mirrored to `logs/parallel_build/<federate__name>.log`. `>>>>` markers separate state changes (`OK`/`FAIL`/`SKIP`/`progress`); grep for `^>>>>` to see just the summary.
 
 **Flags and tunables:**
-- `bash lf-src/parallel_build.sh` — resume mode (default). Skips federates with an existing `.ok` marker. `.fail` markers are wiped so failed federates retry.
+- `bash lf-src/parallel_build.sh` — resume mode (default). Skips federates with an existing `.ok` marker; wipes `.fail` markers so failed federates retry.
 - `bash lf-src/parallel_build.sh --clean` — wipe all markers + logs, force full rebuild.
 - `P=8 J=2 bash lf-src/parallel_build.sh` — override parallelism. Defaults: `P=10` concurrent federates, `J=2` threads per federate (→ ~20 active threads on an 8-CPU box; oversubscription is fine because each federate spends most of its time linking on 1 thread). Dial `P` down if you see swap pressure — peak RSS during link is ~1–2 GB per federate.
 - Killed mid-build? cmake keeps object files in each `fed-gen/.../federate__*/build/`, so the resume pays only for the unfinished steps (usually just the final link, ~1 min).
 
-#### Raw one-liner equivalent
+After success, 70 binaries land in `fed-gen/AutowareFederated/bin/federate__*` (one per shallow or validated reactor) plus `fed-gen/AutowareFederated/bin/RTI`.
 
-If you don't want the script (e.g. tweaking flags ad-hoc):
+#### 4. Compile the Python CARLA federate (~20s)
+
+This is the mixed-target swap: `federate__ci` is a CCpp stub in the federation scaffold but a Python federate at runtime. See "Mixed-Target Federation: Python CARLA Federate" below for the architecture.
+
+```bash
+bash lf-src/carla_interface/build_carla_federate.sh
+```
+
+The script:
+1. Runs `lfc-dev lf-src/carla_interface/federate__ci.lf`. Output lands in `src-gen/lf-src/carla_interface/federate__ci/`.
+2. Copies the CCpp stub's federation preamble header (`fed-gen/AutowareFederated/src/include/_federate__ci_preamble.h`) as `federation_preamble.c` next to the Python module. Both share `FEDERATE_ID=70` and `NUMBER_OF_FEDERATES=71`, so the symbols match.
+3. Patches the `initialize_triggers_for_federate` macro in the copy into a real function definition (linking a separately-compiled object means macros don't expand — the symbol has to exist at link time).
+4. Appends one `target_sources(...)` line to the generated `CMakeLists.txt` (idempotent — only once per run).
+5. Runs `cmake --build` to relink `LinguaFrancafederate__ci.so` with the preamble, producing the final shared module at `src-gen/lf-src/carla_interface/federate__ci/LinguaFrancafederate__ci.so`.
+
+**Prereq:** step 2 (`lfc-dev --no-compile` on `AutowareFederated.lf`) must have run recently so the CCpp stub preamble exists; the build script errors out early otherwise. Re-run this step after any federation `--clean`.
+
+#### 5. Launch the federation
+
+Four terminals. CARLA first, then ROS infrastructure, then the federation, then engage. See "Federation Bootstrap Issues (Mode D)" below for why infrastructure lives outside the federation.
+
+```bash
+# Terminal 1 — CARLA
+cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=low
+
+# Terminal 2 — ROS infrastructure (map projection, TF, robot_state_publisher, RViz)
+bash run_infrastructure.sh
+
+# Terminal 3 — RTI + 70 CCpp federates + Python CARLA federate
+bash lf-src/run_federation.sh
+
+# Terminal 4 — set a goal in RViz's "2D Goal Pose", then engage
+bash engage.sh
+```
+
+`run_federation.sh` staggers federate launches by 100 ms (avoids RTI `accept()` overload — see "RTI Socket Backlog" below) and pins `federate__lcp` to GPU 0 for TensorRT compatibility. Ctrl-C kills the RTI and all federates via its `cleanup` trap.
+
+### When to rebuild what
+
+| Change | Rebuild |
+|---|---|
+| Edited a `_main.lf` (shallow or validated) | `lfc-dev --no-compile lf-src/AutowareFederated.lf` → `parallel_build.sh`. Resumes; only changed federates rebuild. |
+| Edited a `CMakeListsExtension.txt` | `parallel_build.sh` — cmake picks up the change on next configure. |
+| Added / removed a federate in `AutowareFederated.lf` | Step 2 then `parallel_build.sh --clean`. `NUMBER_OF_FEDERATES` is baked into every binary. |
+| Changed an LF port connection | Same as above. |
+| Edited `lf-src/carla_interface/federate__ci.lf` or `carla_bridge.py` | `build_carla_federate.sh`. |
+| Edited Autoware C++ source | `colcon build --packages-select <pkg>` (see "Rebuild One Autoware Package"), then step 3 (resumes). |
+
+### Raw one-liner equivalent
+
+If you want to skip `parallel_build.sh` (e.g. to tweak cmake flags ad-hoc):
 
 ```bash
 ls fed-gen/AutowareFederated/src-gen/federate__*/ | xargs -P4 -I{} bash -c '
@@ -42,14 +128,6 @@ ls fed-gen/AutowareFederated/src-gen/federate__*/ | xargs -P4 -I{} bash -c '
   cmake --build build --target install --parallel 8 > /dev/null 2>&1
 '
 ```
-
-#### When is a full rebuild (`--clean`) needed?
-- Adding/removing federates from `AutowareFederated.lf` (changes `NUMBER_OF_FEDERATES` in every binary)
-- Changing LF port connections (changes generated network sender/receiver code)
-
-#### Incremental builds (fast, seconds)
-- Fixing a single node's `CMakeListsExtension.txt` → re-cmake that one federate (or just re-run `parallel_build.sh` — cmake figures it out)
-- Changing a `.lf` reaction body → `lfc-dev --no-compile lf-src/AutowareFederated.lf` to regenerate, then `parallel_build.sh` (resumes → only affected federates rebuild)
 
 ### TinyXML2 Vendor Issue
 
@@ -150,20 +228,28 @@ lfc-dev lf-src/shift_decider/shift_decider_main.lf
 
 ### Federation Preamble for Python
 
-The Python target's code generator doesn't emit the federation preamble symbols (`_lf_executable_preamble`, `num_port_absent_reactions`, etc.) that the C runtime requires. Fix: manually create a `federation_preamble.c` file and add it to the CMakeLists:
+The Python target's code generator doesn't emit the federation preamble symbols the C runtime requires:
+- `_lf_executable_preamble(environment_t*)` — socket init + `lf_connect_to_rti`
+- `num_port_absent_reactions`, `port_absent_reaction[]`, `staa_lst[]`, `_lf_action_table[]`, etc. — zero-sized instances for a federate with no actions
+- `initialize_triggers_for_federate` — trampoline into `staa_initialization`
+- `lf_send_neighbor_structure_to_RTI` — neighbor topology bootstrap
+
+Without them, loading the Python federate's `.so` errors with `undefined symbol: num_port_absent_reactions` (or similar).
+
+**Fix (automated by `build_carla_federate.sh`):** the CCpp stub scaffolded from `AutowareFederated.lf` already contains a matching preamble at `fed-gen/AutowareFederated/src/include/_federate__ci_preamble.h` (same `FEDERATE_ID=70`, `NUMBER_OF_FEDERATES=71`). The build script lifts it verbatim, patches the one macro that needs to become a real function (`initialize_triggers_for_federate` — see below), adds it to the Python federate's `CMakeLists.txt` via `target_sources(...)`, and relinks.
+
+One subtlety: the CCpp preamble defines `initialize_triggers_for_federate` as a `do/while` macro. That works for CCpp federates because the preamble header is `#include`d into the same TU that calls it. In the Python federate build we compile the preamble as a separate object and *link* it, so the macro has to become a function:
 
 ```c
-// federation_preamble.c
-void _lf_executable_preamble(environment_t* env) {
-    _lf_my_fed_id = 71;  // Must match FEDERATE_ID
-    _fed.number_of_inbound_p2p_connections = 0;
-    _fed.number_of_outbound_p2p_connections = 0;
-    // ... socket initialization ...
-    lf_connect_to_rti("localhost", 0);
+// patched in by build_carla_federate.sh
+void initialize_triggers_for_federate(void) {
+    staa_initialization();
 }
 ```
 
-This file must be regenerated whenever `FEDERATE_ID` or `NUMBER_OF_FEDERATES` changes.
+The script does this patch with a small inline Python `re.sub`; if `federate__ci.lf` ever stops generating a call site, you'll see a "pattern not found" warning and can drop the patch.
+
+**Regenerate whenever** `FEDERATE_ID`, `NUMBER_OF_FEDERATES`, or the federation membership changes. Running step 2 (the top-level `lfc-dev --no-compile`) refreshes the CCpp stub preamble; running step 4 (`build_carla_federate.sh`) re-lifts it into the Python federate.
 
 ### RTI Socket Backlog
 
