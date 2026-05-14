@@ -15,7 +15,7 @@ export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$
 
 source /opt/ros/humble/setup.bash
 source ~/Documents/projects/parking-demo/lf-autoware/install/setup.bash 2>/dev/null
-export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp  # was cyclonedds; switched 2026-05-07 to match Mode A launch
 
 echo "Sending engage command to Autoware..."
 ros2 topic pub --once /autoware/engage autoware_vehicle_msgs/msg/Engage '{engage: true}'

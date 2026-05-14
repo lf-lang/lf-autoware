@@ -22,11 +22,17 @@ export PATH=$(echo $PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$
 export LD_LIBRARY_PATH=$(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 export PYTHONPATH=$(echo $PYTHONPATH | tr ':' '\n' | grep -v conda | tr '\n' ':' | sed 's/:$//')
 
-# Pin Autoware's CUDA/TensorRT to GPU 0 (RTX 3070)
+# Single-GPU layout — everything on GPU 0 (RTX 3070, 8 GB).
+# CARLA is slim (cameras disabled in autoware_carla_interface/config/sensor_mapping.yaml,
+# headless tiny window) so it fits alongside Autoware's full perception (lidar_centerpoint
+# TRT engine). GPU 1 (GTX 1050 Ti, sm_6.1) is unused — TRT 10 dropped Pascal support.
 export CUDA_VISIBLE_DEVICES=0
 
-# Use CycloneDDS for reliable large-message transport
-export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# Use FastDDS — works out-of-the-box for large transient_local messages
+# (CycloneDDS in this environment silently dropped /map/vector_map; see
+# 2026-05-07 debug session. Switch back with rmw_cyclonedds_cpp + a proper
+# CYCLONEDDS_URI config + sysctl rmem/wmem bumps + `ip link set lo multicast on`.)
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 
 # Source ROS2 and workspace
 source /opt/ros/humble/setup.bash
