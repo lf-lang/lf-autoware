@@ -11,12 +11,15 @@ the mainline branches.
 **What this is not.** This does not cover Mode B (LF planning + control hybrid)
 or Mode C (full LF federation). Those use a different branch — see
 [`lessons.md` §4](./lessons.md) for the recovery path to the LF-shim
-snapshot.
+snapshot. §7 below covers a halfway point: pure mainline ROS Autoware
+with **one** node (currently `shift_decider`) re-implemented as an LF
+reactor running in a sidecar process — not the full federation.
 
-**Status.** Configuration and build steps are verified. End-to-end behavior
-(goal pose → route → trajectory → engage → vehicle moves in CARLA) was
-diagnosed and unblocked but has not yet been demonstrated in a single
-uninterrupted run. Note this when you reproduce.
+**Status.** End-to-end run demonstrated 2026-05-15: goal pose → route →
+trajectory → engage → vehicle moves in CARLA. Also demonstrated with the
+`shift_decider` reactor under Lingua Franca management (vanilla
+composable_node suppressed; gear commands flow from the LF reactor's
+inner ShiftDecider into vehicle_cmd_gate). See §7 below.
 
 ---
 
@@ -46,17 +49,26 @@ uninterrupted run. Note this when you reproduce.
 ```
 parking-demo/lf-autoware/
 ├── docs/                                ← this file lives here
-├── scripts/                             ← run/teardown scripts
-│   ├── launch_carla.sh
-│   ├── launch_autoware.sh
-│   ├── engage.sh
-│   └── kill_autoware.sh
+│   ├── README.md                        ← run guide (this file)
+│   └── lessons.md                       ← complete debugging history
+├── scripts/                             ← run/teardown wrappers
+│   ├── launch_carla.sh                  ← starts CARLA server
+│   ├── launch_autoware.sh               ← vanilla Autoware + CARLA bridge
+│   ├── engage.sh                        ← /autoware/engage publisher
+│   ├── kill_autoware.sh                 ← teardown + SHM cleanup
+│   ├── build_lf_autoware.sh             ← builds bin/Autoware from lf-src/Autoware.lf
+│   ├── run_lf_autoware.sh               ← runs bin/Autoware with env sourced
+│   └── run_shift_decider_test.sh        ← standalone self-test for the shift_decider reactor
+├── lf-src/                              ← Lingua Franca reactor sources
+│   ├── Autoware.lf                      ← top-level non-federated LF program
+│   └── shift_decider/                   ← validated LF reactor (more to come)
 ├── src/
 │   ├── core/autoware_core/              ← upstream tag 1.7.0 (clean mainline)
 │   ├── universe/autoware_universe/      ← branch feat/carla-integration
 │   ├── launcher/autoware_launch/        ← branch feat/carla-integration
 │   └── ...
 ├── install/                             ← colcon build output
+├── bin/                                 ← lfc-dev output (Autoware, shift_decider_main)
 └── ~/autoware_map/Town01/               ← NOT in repo; download separately
 ```
 
@@ -316,8 +328,24 @@ Any check that fails sends you to [`lessons.md`](./lessons.md):
 bash ~/Documents/projects/parking-demo/lf-autoware/scripts/kill_autoware.sh
 ```
 
-Kills all `component_container_mt-*`, RViz, the engage publisher, and CARLA.
-Use this when something hangs and Ctrl-C in the launch terminal isn't enough.
+Kills all `component_container_mt-*`, the standalone launch-spawned nodes
+under `install/`, RViz, the engage publisher, the relay/republish helpers,
+**and** clears stale FastDDS SHM locks from `/dev/shm/` plus restarts the
+ros2 daemon. Use it between every session — see [`lessons.md` §9.7](./lessons.md)
+for what happens if you don't.
+
+If you were also running the LF reactor binary (§8), kill it separately —
+the kill script's pattern doesn't include it:
+
+```bash
+pkill -KILL -f "bin/Autoware"
+```
+
+CARLA is **not** killed by `kill_autoware.sh`. To stop CARLA:
+
+```bash
+pkill -KILL -f "CarlaUE4"
+```
 
 ---
 
@@ -334,6 +362,12 @@ Use this when something hangs and Ctrl-C in the launch terminal isn't enough.
 | `localization/initialization_state` stuck at 1 or 2 | Display server contention (NoMachine), or `ndt_scan_matcher` LF shim | [`lessons.md` §2, §6](./lessons.md) |
 | Linker OOM during build | Too many CUDA libraries linking in parallel | §2.2 retry with reduced parallelism |
 | `lanelet2_map_loader` warning `format_version: null` | Town01 map has no version tag | [`lessons.md` §8](./lessons.md) — ignore |
+| `RTPS_TRANSPORT_SHM Error: open_and_lock_file failed` floods | Stale `/dev/shm/fastrtps_*` locks from prior killed runs | [`lessons.md` §9.7](./lessons.md) — `kill_autoware.sh` clears them |
+| `kill_autoware.sh` says "No Autoware processes found" but `ros2 node list` shows ~70 nodes | Script's `REPO` path used to resolve to `scripts/` not the repo root | [`lessons.md` §9.8](./lessons.md) — fixed |
+| LF reactor publishes to `/output/gear_cmd` instead of `/control/shift_decider/gear_cmd` | `get_node_options_from_yaml` doesn't apply launch-file `<remap>` tags | [`lessons.md` §9.5](./lessons.md) — fix is `nodeOptions.arguments({...})` in the reactor's startup reaction |
+| `Publisher count: ≥2` on `/control/shift_decider/gear_cmd` with `--lf-managed=shift_decider` | Launch XML edits not yet built into `install/share/...launch/`; OR zombie `bin/Autoware` from a previous run | [`lessons.md` §9.4, §9.9](./lessons.md) — rebuild `autoware_launch tier4_control_launch`; `pkill bin/Autoware` |
+| `dlopen` error: `lib…__rosidl_typesupport_fastrtps_cpp.so: No such file or directory` when running an LF binary | Shell didn't source `install/setup.bash` → `LD_LIBRARY_PATH` empty; `dlopen` ignores RUNPATH | [`lessons.md` §9.6](./lessons.md) — use the wrapper scripts |
+| `undefined reference to autoware::shift_decider::ShiftDecider::onControlCmd(...)` at link time | Header declares the methods but `.cpp` lacks definitions | [`lessons.md` §9.2](./lessons.md) — add 3 setter-style method bodies |
 
 For anything not covered here, read [`lessons.md`](./lessons.md) — it has
 the complete debug history including the dead ends so you don't waste time
@@ -341,7 +375,156 @@ re-chasing them.
 
 ---
 
-## 7. Differences from the Autoware-documented planning_simulator workflow
+## 7. Running with an LF reactor in the mix (Mode A + shift_decider via LF)
+
+Demonstrated 2026-05-15. This is the same Mode A stack as §3, but the
+vanilla `autoware_shift_decider` composable_node is **suppressed** and an
+LF reactor (`lf-src/shift_decider/shift_decider_main.lf`, instantiated by
+`lf-src/Autoware.lf`) takes over publishing on
+`/control/shift_decider/gear_cmd`. The downstream `vehicle_cmd_gate`
+subscriber doesn't notice the difference.
+
+### 7.1 Quick check before you start
+
+```bash
+# 1. Have the LF binary built?
+ls bin/Autoware && ls bin/shift_decider_main
+# If not, see §7.2.
+
+# 2. Underlying ROS package has the 3 LF entry-point method bodies?
+#    (onControlCmd / onAutowareState / onCurrentGear)
+grep "ShiftDecider::onControlCmd" \
+    src/universe/autoware_universe/control/autoware_shift_decider/src/autoware_shift_decider.cpp
+# Expect one match (the method body). Empty → see lessons.md §9.2.
+
+# 3. Launch XML has the lf_managed_shift_decider plumbing INSTALLED?
+grep lf_managed_shift_decider \
+    install/autoware_launch/share/autoware_launch/launch/e2e_simulator.launch.xml
+# Expect 2 matches (declaration + forward). Empty → colcon-rebuild autoware_launch.
+```
+
+### 7.2 Build the LF artifacts
+
+The pure-Mode-A build from §2.2 already builds the underlying ROS
+packages. Two additional steps for the LF binaries:
+
+```bash
+# Builds the standalone self-test (also installs autoware_shift_decider
+# afresh in case you edited its source):
+bash lf-src/shift_decider/build.sh
+
+# Builds the top-level non-federated LF program (bin/Autoware):
+bash scripts/build_lf_autoware.sh
+#   --no-colcon     # skip the ROS-pkg refresh if only the .lf changed
+#   --clean         # rm src-gen/ + bin/Autoware before regenerating
+```
+
+Both scripts source the workspace internally, so they work in any fresh
+shell. Total build time: ~20-30 sec for the underlying ROS package +
+~30-60 sec for `lfc-dev` codegen and the LF executable link.
+
+### 7.3 Smoke-test the reactor in isolation (recommended)
+
+Before running it against the full Autoware stack, verify the reactor
+works standalone:
+
+```bash
+bash scripts/run_shift_decider_test.sh
+```
+
+Pass criteria:
+- Prints `ShiftDeciderTestSource: sending synthetic inputs`
+- Prints `ShiftDeciderChecker: observed gear_cmd=2` (`2` = DRIVE)
+- Exits 0 (a `WARNING: ---- There are 1 unprocessed future events` line
+  is harmless — see [`lessons.md` §9.10](./lessons.md))
+
+If this fails, fix it here. Don't proceed to §7.4 until the standalone
+test passes.
+
+### 7.4 Run sequence (4 terminals)
+
+Same setup as §3 plus one extra terminal for the LF reactor:
+
+```bash
+# Terminal 1 — CARLA (unchanged from §3)
+bash scripts/launch_carla.sh
+
+# Terminal 2 — Autoware with vanilla shift_decider SUPPRESSED
+bash scripts/launch_autoware.sh --lf-managed=shift_decider
+# Wait ~90 sec for full load. Watch for
+#   "Loaded node '/control/vehicle_cmd_gate'"
+# in the launch output — that's the cue control is ready.
+
+# Terminal 3 — LF reactor that owns shift_decider
+bash scripts/run_lf_autoware.sh
+# (idles forever; takes over publishing /control/shift_decider/gear_cmd)
+
+# RViz: 2D Pose Estimate → 2D Goal Pose → drag speed limit > 0
+
+# Terminal 4 — engage (same as §3)
+bash scripts/engage.sh
+```
+
+### 7.5 Verification
+
+The decisive single-command check is:
+
+```bash
+ros2 topic info /control/shift_decider/gear_cmd
+```
+
+| Output | Verdict |
+|---|---|
+| `Publisher count: 1` + `Subscription count: 1` | ✓ Healthy. LF reactor publishing, `vehicle_cmd_gate` listening. |
+| `Publisher count: ≥2` | Suppression failed (launch XML not rebuilt, or zombie `bin/Autoware`) — see §6 / [`lessons.md` §9.4, §9.9](./lessons.md) |
+| `Publisher count: 1`, `Subscription count: 0` | `vehicle_cmd_gate` didn't load — usually a TRT engine build failure earlier in the launch |
+| Topic doesn't exist | Remap missing in the LF reactor — see [`lessons.md` §9.5](./lessons.md) |
+
+Once the topic is healthy, the rest of the §4 checklist applies unchanged.
+You should see gear commands at ~10 Hz once the reactor's three input
+topics (`/control/trajectory_follower/control_cmd`, `/autoware/state`,
+`/vehicle/status/gear_status`) are all flowing.
+
+### 7.6 Teardown (always run between sessions)
+
+```bash
+bash scripts/kill_autoware.sh        # kills the launched stack + cleans SHM
+pkill -KILL -f "bin/Autoware"        # kills the LF reactor (separate process)
+```
+
+`kill_autoware.sh` does not catch `bin/Autoware`. Forgetting to kill it
+manually leaves a zombie LF reactor that will collide with the next run
+(two publishers on `/control/shift_decider/gear_cmd`).
+
+### 7.7 Extending to more validated reactors
+
+The other 4 validated reactors from
+`checkpoint/2026-04-23-shallow-wrappers-5-validated`
+(`planning_validator`, `trajectory_follower`, `vehicle_cmd_gate`,
+`bridge_interface`) follow the same pattern. For each:
+
+1. Bring over the reactor's `.lf`, `build.sh`, `include/CMakeListsExtension.txt`.
+2. Ensure the underlying ROS package's `.hpp` declarations have matching
+   `.cpp` definitions (see [`lessons.md` §9.2](./lessons.md)).
+3. Add a `lf_managed_<name>` arg + `unless="$(var ...)"` on the
+   corresponding `<composable_node>`, plumb through the same 4 launch
+   files (`e2e_simulator.launch.xml` → `autoware.launch.xml` →
+   `tier4_control_component.launch.xml` → `control.launch.xml` for
+   control-side reactors; planning has its own chain).
+4. Add `add_lf_managed_arg <name>` to `scripts/launch_autoware.sh`.
+5. Add the colcon package name to `COLCON_PKGS` in
+   `scripts/build_lf_autoware.sh`.
+6. Add `import` and `new` lines to `lf-src/Autoware.lf`.
+7. Apply remappings via `nodeOptions.arguments({...})` in the reactor's
+   `startup` reaction (see [`lessons.md` §9.5](./lessons.md)).
+8. Rebuild `autoware_launch tier4_control_launch` so the install/share
+   XMLs pick up step 3.
+
+That's 8 mechanical steps per reactor.
+
+---
+
+## 8. Differences from the Autoware-documented planning_simulator workflow
 
 If you're following the upstream Autoware tutorial and adapting to CARLA:
 

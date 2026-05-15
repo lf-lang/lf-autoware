@@ -515,6 +515,244 @@ Compiler warning in a transitive dependency. Doesn't affect runtime.
 
 ---
 
+## 9. Bringing a validated LF reactor onto the current branch (2026-05-15)
+
+First end-to-end run with an LF-managed Autoware node was `shift_decider`,
+pulled from `checkpoint/2026-04-23-shallow-wrappers-5-validated`. Five
+distinct gotchas surfaced. Most of them generalize to the remaining four
+validated reactors (`planning_validator`, `trajectory_follower`,
+`vehicle_cmd_gate`, `bridge_interface`).
+
+### 9.1 Two versions of the same reactor exist on the checkpoint branch
+
+`shift_decider_main.lf` was reduced from 214 lines to 89 lines by the
+checkpoint commit (`c8f42af`). The earlier version (`8159b96 Polish shift
+decider`) is the **testable** one — three LF inputs + a self-checking
+`main reactor` (`ShiftDeciderTestSource` → reactor → `ShiftDeciderChecker`).
+The checkpoint version is the **federation-shape** one — one LF input,
+trivial main, matches the AutowareFederated.lf wiring exactly.
+
+When porting forward, take **8159b96's version** for local-test usability;
+strip back to the c8f42af shape only when wiring into a federation. The
+extra LF inputs are legal-but-dangling when the reactor is instantiated
+standalone; the underlying ROS subscriptions in the spin thread still feed
+real data in.
+
+### 9.2 The C++ class needs LF entry-point method bodies
+
+Mainline `autoware_shift_decider.hpp` already **declares** public
+`onControlCmd / onAutowareState / onCurrentGear` methods and adds
+`lf_output_gear_cmd / lf_gear_cmd_is_set` public fields — the LF-fork
+hooks are committed on `feat/carla-integration`. But the corresponding
+**implementations** were only in the snapshotted working-tree mods. Linker
+error when building the reactor:
+
+```
+undefined reference to `autoware::shift_decider::ShiftDecider::onControlCmd(...)'
+```
+
+Fix: add 3 setter-style method bodies to the .cpp. Each is one line
+(`control_cmd_ = msg;`) — they stash data where `onTimer()` would have
+written it from the polling subscriber. Keep the ROS publish in `onTimer`
+intact so vanilla Mode A keeps working; only suppress the vanilla
+**composable_node**, not the publish itself.
+
+This will be the same fix for every reactor in §9 with `lf_output_*`
+hooks — check `<pkg>/include/.../<class>.hpp` for declarations that lack
+.cpp definitions.
+
+### 9.3 Suppressing the vanilla composable_node when LF owns it
+
+Pattern, already idiomatic in this codebase (`use_control_command_gate` on
+`vehicle_cmd_gate`): add `unless="$(var lf_managed_<name>)"` to the
+composable_node, plumb `lf_managed_<name>` (default `false`) up through
+all enclosing launch files. For `shift_decider` this was 4 files:
+
+```
+control.launch.xml             ← composable_node + arg declaration + unless=
+tier4_control_component.launch ← forward
+autoware.launch.xml            ← forward
+e2e_simulator.launch.xml       ← forward
+scripts/launch_autoware.sh     ← --lf-managed=<csv> flag
+```
+
+`scripts/launch_autoware.sh --lf-managed=shift_decider` is the public
+interface. Each future validated reactor needs the same 5-file change
+plus one `add_lf_managed_arg <name>` line in the script.
+
+### 9.4 Launch-XML edits don't take effect without colcon rebuild
+
+`ros2 launch` reads from `install/<pkg>/share/<pkg>/launch/<file>.xml`,
+not from `src/`. After editing the launch files, you **must**:
+
+```bash
+colcon build --packages-select autoware_launch tier4_control_launch \
+    --base-paths src
+```
+
+…then start a new launch. This caught us during the first integration
+attempt — the vanilla `autoware_shift_decider` kept appearing alongside
+the LF reactor because the install-side XML was the pre-suppression
+copy. The two packages above rebuild in ~5 seconds.
+
+### 9.5 `get_node_options_from_yaml()` does not apply launch remappings
+
+The LF reactor instantiates the underlying ROS node directly:
+
+```cpp
+rclcpp::NodeOptions nodeOptions = get_node_options_from_yaml(yaml, "/**");
+self->node = new autoware::shift_decider::ShiftDecider(nodeOptions);
+```
+
+`get_node_options_from_yaml()` applies **parameters** from the YAML, but
+the `<remap>` tags inside the launch file are *only* applied when the
+node is loaded by `ros2 launch`. Without remaps the inner node ends up
+on `input/control_cmd`, `output/gear_cmd`, etc. in the **root** namespace,
+where neither vanilla Autoware nor `vehicle_cmd_gate` can find it.
+
+Fix: inject remappings into `NodeOptions` explicitly in the reactor's
+`startup` reaction, mirroring exactly what the suppressed composable_node
+launch entry would have done:
+
+```cpp
+nodeOptions.arguments({
+    "--ros-args",
+    "-r", "input/control_cmd:=/control/trajectory_follower/control_cmd",
+    "-r", "input/state:=/autoware/state",
+    "-r", "input/current_gear:=/vehicle/status/gear_status",
+    "-r", "output/gear_cmd:=/control/shift_decider/gear_cmd",
+});
+self->node = new autoware::shift_decider::ShiftDecider(nodeOptions);
+```
+
+**General rule.** For every reactor moved into `Autoware.lf`, look up its
+`<composable_node>` entry in the launch file it would have come from, copy
+every `<remap from="X" to="Y"/>` into a `"-r", "X:=Y"` pair. Don't trust
+the YAML parameter file alone — remaps live in the launch graph, not in
+parameters.
+
+### 9.6 `dlopen()` ignores RUNPATH — every binary needs `LD_LIBRARY_PATH`
+
+ROS 2's typesupport dispatcher uses `dlopen()` with bare library names.
+`dlopen` only consults `LD_LIBRARY_PATH` and the loader cache; it does
+**not** look at the binary's RUNPATH (which `colcon`'s rpath does set).
+So even though `bin/Autoware` has every `install/<pkg>/lib` in its
+RUNPATH, this still fails:
+
+```
+$ ./bin/Autoware
+Could not load library libautoware_system_msgs__rosidl_typesupport_fastrtps_cpp.so:
+  cannot open shared object file: No such file or directory
+```
+
+Sourcing `install/setup.bash` populates `LD_LIBRARY_PATH`. The wrapper
+scripts (`run_lf_autoware.sh`, `run_shift_decider_test.sh`) encapsulate
+that step so you can't forget it.
+
+Same underlying issue affects three layers (this comes up *constantly* —
+write the wrapper):
+
+| Layer | Symptom | Env var fix |
+|---|---|---|
+| Build (lfc-dev → CMake) | `find_package(autoware_shift_decider) … NOT FOUND` | `CMAKE_PREFIX_PATH` |
+| Runtime (binary startup) | `dlopen: lib…__rosidl_typesupport_fastrtps_cpp.so: No such file or directory` | `LD_LIBRARY_PATH` |
+| Both | `source install/setup.bash` populates both | — |
+
+### 9.7 FastDDS stale SHM locks accumulate
+
+Every hard-killed FastDDS process leaves files behind in `/dev/shm/`:
+
+```
+/dev/shm/fastrtps_*
+/dev/shm/sem.fastrtps_*
+```
+
+On the next launch, FastDDS tries to claim the same SHM ports and gets
+`open_and_lock_file failed → open_port_internal`. Symptoms cascade:
+RViz prints SHM errors, carla_interface fails to bind, TRT engine loads
+fail on top of that, control_container ends up empty even though the
+container process is up. `ros2 topic hz` queries time out because the
+ephemeral subscriber can't acquire its own SHM port.
+
+Cleanup is one line:
+
+```bash
+rm -f /dev/shm/fastrtps_* /dev/shm/sem.fastrtps_*
+ros2 daemon stop && ros2 daemon start
+```
+
+`scripts/kill_autoware.sh` already does both as its final step. Just
+remember to actually run it between sessions.
+
+### 9.8 `kill_autoware.sh` REPO path bug (now fixed)
+
+The script was moved from the repo root into `scripts/` at some point,
+but the line that derives the repo path stayed wrong for the new
+location:
+
+```bash
+# BROKEN — resolves to scripts/, not the repo root
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# FIXED — goes up one level
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+```
+
+With the broken `REPO`, every `${REPO}/install/` reference in the kill
+pattern was `…/scripts/install/` — a non-existent path matching no
+process. The script reported "No Autoware processes found" while 47
+launch-spawned binaries lived on, polluting the ROS graph and exhausting
+SHM ports.
+
+Two other rename leftovers fixed: `grep -v "kill_workflow3\.sh"`
+self-exclusion → `kill_autoware\.sh`, and stale `Workflow 3` strings in
+help text.
+
+If you move *any* of these scripts in the future, audit every `dirname`,
+every name in `grep -v`, and every documentation string. They are
+boring, fragile lines that all break silently.
+
+### 9.9 Two `bin/Autoware` processes can run simultaneously
+
+Building `bin/Autoware` does not stop a previously-started one. If you
+forget to kill it (very easy because it has no test peers and no timeout,
+so the previous instance happily idles forever), you end up with two
+processes both claiming `/shift_decider` as their node name. The
+discovery system reports both, often with one showing
+`_NODE_NAME_UNKNOWN_` because its publisher cache is stale.
+
+`pkill -KILL -f "bin/Autoware"` before each `scripts/run_lf_autoware.sh`,
+or extend `kill_autoware.sh` to catch this class.
+
+### 9.10 Two flavors of "Done" for the test harness
+
+Standalone `bin/shift_decider_main` exits 0 after one DRIVE command and
+prints `Elapsed physical time (in nsec): N` plus an "unprocessed future
+events on the event queue" warning. The warning is harmless: `lf_request_stop()`
+fires before the next 100 ms timer tick, so the one queued timer event
+gets purged at shutdown. Pass criterion is `observed gear_cmd=2` and
+exit 0; the warning line is noise.
+
+### 9.11 Sanity-checking the LF reactor in the live stack
+
+The decisive single command:
+
+```bash
+ros2 topic info /control/shift_decider/gear_cmd
+```
+
+| Output | Verdict |
+|---|---|
+| `Publisher count: 1` + `Subscription count: 1` | Healthy: LF reactor publishing, vehicle_cmd_gate listening |
+| `Publisher count: ≥2` | Suppression failed (launch XML not rebuilt) or zombie LF binary |
+| `Publisher count: 1`, `Subscription count: 0` | `vehicle_cmd_gate` didn't load — usually TRT engine build failed earlier in the launch |
+| Topic doesn't exist | Remap from §9.5 missing — inner node is publishing to `/output/gear_cmd` instead |
+
+This single query distinguishes all four failure modes we hit while
+landing shift_decider end-to-end.
+
+---
+
 ## Architectural reference
 
 ### Autoware diagnostic graph system
