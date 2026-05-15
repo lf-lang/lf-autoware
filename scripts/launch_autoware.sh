@@ -1,18 +1,25 @@
 #!/bin/bash
-# Phase 1 Test Script: Autoware Universe + CARLA (Synchronous Mode)
+# Launches Autoware Universe + CARLA bridge (Mode A: vanilla ROS).
 #
 # CARLA runs in synchronous mode with fixed_delta_seconds=0.05 (20 FPS).
 # Each world.tick() advances simulation by exactly 0.05s, making it deterministic.
 #
 # Usage:
-#   Terminal 1: Start CARLA server (headless — use rviz for visualization)
-#     cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=Low -RenderOffScreen
-#     # With display (may crash on some GPU/driver combos):
-#     # cd ~/carla-0.9.16 && ./CarlaUE4.sh -prefernvidia -quality-level=Low
+#   Terminal 1: Start CARLA server
+#     bash scripts/launch_carla.sh
 #
 #   Terminal 2: Run this script
-#     bash ~/Documents/projects/parking-demo/lf-autoware/test_phase1_carla.sh
-#     bash ~/Documents/projects/parking-demo/lf-autoware/test_phase1_carla.sh --no-rviz
+#     bash scripts/launch_autoware.sh
+#     bash scripts/launch_autoware.sh --no-rviz
+#     bash scripts/launch_autoware.sh --lf-managed=shift_decider
+#     bash scripts/launch_autoware.sh --lf-managed=shift_decider,vehicle_cmd_gate
+#
+# --lf-managed=<comma-separated-list>
+#   Suppresses the listed vanilla composable_nodes so an LF reactor (in
+#   lf-src/Autoware.lf) can own them without colliding. Currently
+#   supported: shift_decider. Future additions: planning_validator,
+#   trajectory_follower, vehicle_cmd_gate, bridge_interface — one for
+#   each fully-ported reactor.
 
 set -e
 
@@ -38,9 +45,47 @@ export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
 source /opt/ros/humble/setup.bash
 source ~/Documents/projects/parking-demo/lf-autoware/install/setup.bash 2>/dev/null
 
-echo "=== Phase 1: Autoware + CARLA (Synchronous) ==="
+# --- Argument parsing ---------------------------------------------------
+RVIZ="true"
+LF_MANAGED=""
+
+for arg in "$@"; do
+    case "$arg" in
+        --no-rviz)
+            RVIZ="false"
+            ;;
+        --lf-managed=*)
+            LF_MANAGED="${arg#--lf-managed=}"
+            ;;
+        *)
+            echo "WARNING: unknown argument '$arg' (ignored)" >&2
+            ;;
+    esac
+done
+
+# Translate --lf-managed into ros2 launch args. Add one branch per
+# fully-ported reactor as it lands in lf-src/Autoware.lf.
+EXTRA_ARGS=()
+add_lf_managed_arg() {
+    local name="$1"
+    if [[ ",$LF_MANAGED," == *,"$name",* ]]; then
+        EXTRA_ARGS+=("lf_managed_${name}:=true")
+        echo "  - suppressing vanilla ${name} (LF reactor owns it)"
+    fi
+}
+
+echo "=== Mode A: Autoware Universe + CARLA (Synchronous) ==="
 echo "ROS_DISTRO: $ROS_DISTRO"
-echo "Make sure CARLA server is running in another terminal first!"
+echo "Make sure CARLA server is running (scripts/launch_carla.sh) first!"
+if [ -n "$LF_MANAGED" ]; then
+    echo "LF-managed nodes:"
+    add_lf_managed_arg shift_decider
+    # Future:
+    # add_lf_managed_arg planning_validator
+    # add_lf_managed_arg trajectory_follower
+    # add_lf_managed_arg vehicle_cmd_gate
+    # add_lf_managed_arg bridge_interface
+fi
 echo ""
 
 MAP_PATH="$HOME/autoware_map/Town01"
@@ -51,23 +96,18 @@ if [ ! -f "$MAP_PATH/pointcloud_map.pcd" ]; then
     exit 1
 fi
 
-echo "Using map: $MAP_PATH"
+echo "Using map:     $MAP_PATH"
 echo "Vehicle model: sample_vehicle"
-echo "Sensor model: carla_sensor_kit"
-echo "Simulator: CARLA (synchronous mode, 20 FPS)"
+echo "Sensor model:  carla_sensor_kit"
+echo "Simulator:     CARLA (synchronous mode, 20 FPS)"
+echo "RViz:          $RVIZ"
 echo ""
-
-RVIZ="true"
-if [ "$1" = "--no-rviz" ]; then
-    RVIZ="false"
-    echo "(rviz disabled)"
-fi
 
 echo "Launching Autoware with CARLA interface..."
 echo ""
 echo "NOTE: After Autoware initializes, you must engage the vehicle."
 echo "  In another terminal, run:"
-echo "    ros2 topic pub /autoware/engage autoware_vehicle_msgs/msg/Engage '{engage: true}' --once"
+echo "    bash scripts/engage.sh"
 echo ""
 
 ros2 launch autoware_launch e2e_simulator.launch.xml \
@@ -75,4 +115,5 @@ ros2 launch autoware_launch e2e_simulator.launch.xml \
     vehicle_model:=sample_vehicle \
     sensor_model:=carla_sensor_kit \
     simulator_type:=carla \
-    rviz:="$RVIZ"
+    rviz:="$RVIZ" \
+    "${EXTRA_ARGS[@]}"

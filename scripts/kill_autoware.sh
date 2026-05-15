@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Kill the full Workflow 3 demo stack:
+# Kill the full Autoware demo stack:
 #   - test_carla_interface_only.sh        (the infra launcher script)
 #   - ros2 launch autoware_launch e2e_simulator.launch.xml   (Autoware infra)
 #   - rviz2 + robot_state_publisher + static_transform_publisher
@@ -7,14 +7,14 @@
 #   - test_lf_full_stack.sh               (the LF launcher script)
 #   - all per-node LF binaries from lf-src/bin/*_main
 #
-# Workflow 3 doesn't use the federated RTI/federate__ binaries, so this
+# Autoware doesn't use the federated RTI/federate__ binaries, so this
 # script does NOT touch fed-gen/. If you also have a federation running,
 # use lf-src/kill_federation.sh (different branches) or pkill -f federate__.
 #
 # Usage:
-#   bash kill_workflow3.sh           # SIGTERM, then SIGKILL stragglers
-#   bash kill_workflow3.sh --force   # SIGKILL immediately
-#   bash kill_workflow3.sh --dry-run # show what would be killed
+#   bash kill_autoware.sh           # SIGTERM, then SIGKILL stragglers
+#   bash kill_autoware.sh --force   # SIGKILL immediately
+#   bash kill_autoware.sh --dry-run # show what would be killed
 #
 # Exits 0 if nothing was running or everything was killed cleanly.
 
@@ -34,9 +34,9 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-# One regex covers every process class in Workflow 3.
+# One regex covers every process class in Autoware.
 # Anchored to absolute paths / unique fragments so we don't sweep up
 # unrelated workloads (other ROS launches, other rviz instances, etc.).
 PATTERN="test_carla_interface_only\.sh"
@@ -58,20 +58,20 @@ PATTERN="${PATTERN}|/image_transport/republish"
 PATTERN="${PATTERN}|/rclcpp_components/component_container"
 
 list_matches() {
-    pgrep -af "$PATTERN" 2>/dev/null | grep -v "kill_workflow3\.sh" || true
+    pgrep -af "$PATTERN" 2>/dev/null | grep -v "kill_autoware\.sh" || true
 }
 
 alive_count() {
-    pgrep -f "$PATTERN" 2>/dev/null | grep -cv "kill_workflow3\.sh" || true
+    pgrep -f "$PATTERN" 2>/dev/null | grep -cv "kill_autoware\.sh" || true
 }
 
 before=$(list_matches)
 count=$(alive_count)
 
 if [ "${count:-0}" -eq 0 ]; then
-    echo "No Workflow 3 processes found."
+    echo "No Autoware processes found."
 else
-    echo "Found $count Workflow 3 process(es):"
+    echo "Found $count Autoware process(es):"
     printf '  %s\n' "$before"
 
     if [ "$DRY" -eq 1 ]; then
@@ -112,7 +112,7 @@ fi
 # Final check
 remaining=$(alive_count)
 if [ "${remaining:-0}" -eq 0 ]; then
-    echo "All Workflow 3 processes terminated."
+    echo "All Autoware processes terminated."
     exit 0
 else
     echo "WARNING: $remaining process(es) still alive:"

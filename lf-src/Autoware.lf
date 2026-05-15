@@ -1,0 +1,38 @@
+/**
+ * Top-level (non-federated) Autoware LF program.
+ *
+ * Instantiates fully-ported Autoware nodes as LF reactors in a single
+ * process. Counterpart to AutowareFederated.lf, which runs each reactor
+ * as its own federate.
+ *
+ * Currently contains only shift_decider — the first of the five
+ * validated reactors from checkpoint/2026-04-23-shallow-wrappers-5-validated
+ * to be brought back onto this branch. As planning_validator,
+ * trajectory_follower, vehicle_cmd_gate, and bridge_interface follow,
+ * they will be added here and wired via LF connections to match the
+ * topology in AutowareFederated.lf:
+ *
+ *     pv ──> tf ──> sd ──> vcg ──> bridge   (LF connections only)
+ *
+ * shift_decider's three LF inputs (control_cmd_in, autoware_state_in,
+ * current_gear_in) are dangling here. That is fine: each input has a
+ * matching ROS subscription inside the underlying ShiftDecider node,
+ * served by the reactor's spin thread, so real data flows in via ROS
+ * topics until LF peers (trajectory_follower, etc.) are wired in.
+ *
+ * To run shift_decider's standalone self-test instead — synthetic
+ * control_cmd_in / autoware_state_in / current_gear_in fed by an
+ * in-process LF test source, with an LF checker validating the gear
+ * command — build and run lf-src/shift_decider/shift_decider_main.lf
+ * directly via `lfc-dev`.
+ */
+target CCpp {
+    cmake-include: "shift_decider/include/CMakeListsExtension.txt",
+    build-type: Debug,
+}
+
+import shift_decider from "shift_decider/shift_decider_main.lf"
+
+main reactor {
+    sd = new shift_decider()
+}
